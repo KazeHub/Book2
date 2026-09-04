@@ -339,7 +339,8 @@ GameTab:Toggle({
         if not state then return end
 
         task.spawn(function()
-            local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+            local VirtualInputManager = game:GetService("VirtualInputManager")
+            local PlayerGui = game:GetService("Players").LocalPlayer.PlayerGui
 
             while autoPressE do
                 local grabbedUI = PlayerGui:FindFirstChild("BossFight") and PlayerGui.BossFight:FindFirstChild("GrabbedUI")
