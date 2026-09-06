@@ -67,15 +67,36 @@ end
 local Player = Window:CreateTab({Title = "Player", Icon = "user"})
 Player:Section("Client")
 
-local InstantPromptEnabled, promptConnection = false, nil
+local InstantPromptEnabled, promptTask, originalHoldDurations = false, nil, {}
 Player:Toggle({
 	Title = "Instant Prompt", Default = false,
 	Callback = function(s)
 		InstantPromptEnabled = s
-		if promptConnection then promptConnection:Disconnect() promptConnection = nil end
+		if promptTask then task.cancel(promptTask) promptTask = nil end
 		if s then
-			for _, p in ipairs(Workspace:GetDescendants()) do if p:IsA("ProximityPrompt") then p.HoldDuration = 0 end end
-			promptConnection = Workspace.DescendantAdded:Connect(function(d) if d:IsA("ProximityPrompt") then d.HoldDuration = 0 end end)
+			originalHoldDurations = {}
+			for _, p in ipairs(Workspace:GetDescendants()) do
+				if p:IsA("ProximityPrompt") then
+					originalHoldDurations[p] = p.HoldDuration
+					p.HoldDuration = 0
+				end
+			end
+			promptTask = task.spawn(function()
+				while InstantPromptEnabled do
+					for _, p in ipairs(Workspace:GetDescendants()) do
+						if p:IsA("ProximityPrompt") and p.HoldDuration ~= 0 then
+							if not originalHoldDurations[p] then originalHoldDurations[p] = p.HoldDuration end
+							p.HoldDuration = 0
+						end
+					end
+					task.wait(0.5)
+				end
+			end)
+		else
+			for p, orig in pairs(originalHoldDurations) do
+				if p and p.Parent then p.HoldDuration = orig end
+			end
+			originalHoldDurations = {}
 		end
 	end
 })
@@ -135,7 +156,7 @@ Player:Toggle({
 				while TPWalkEnabled do
 					local _, hum, hrp = refreshCharCache()
 					if hrp and hum and hum.MoveDirection.Magnitude > 0 then
-						hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (TPWalkSpeed * 2.5))
+						hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (TPWalkSpeed * 0.35))
 					end
 					task.wait(0.03)
 				end
