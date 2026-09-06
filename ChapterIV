@@ -2,14 +2,14 @@ local KazeUI = KazeUI or loadstring(game:HttpGet("https://raw.githubusercontent.
 local Window = KazeUI:CreateWindow({
 	Title = "The Mimic",
 	Author = "Kaze",
-	Version = "Book II LowLag",
+	Version = "Book II",
 	Size = UDim2.fromOffset(500, 370),
 	Icon = "79414074886215",
 	Theme = "Obsidian",
 	GlowStyle = "Cycle",
 	GlowColor = true,
 	PopupTitle = "Welcome to Kaze Hub!",
-	PopupContent = "Low Lag Edition",
+	PopupContent = "Join Discord Server. If you found any bug please, report it to the Discord.",
 	DiscordLink = "https://discord.gg/DKGRny4DD",
 	OpenButton = {Icon = "79414074886215", Hidable = false, Size = UDim2.fromOffset(60, 60)}
 })
