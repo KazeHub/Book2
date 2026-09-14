@@ -4,14 +4,14 @@ local KazeUI = KazeUI or loadstring(game:HttpGet(
 
 local Window = KazeUI:CreateWindow({
     Title = "THE MIMIC",
-    Author = "KAZE",
+    Author = "KAZS",
     Version = "BOOK II",
     Size = UDim2.fromOffset(500, 370),
     Icon = "79414074886215",
     Theme = "Obsidian",
     GlowStyle = "Cycle",
     GlowColor = true,
-
+    
     PopupTitle = "Welcome to Kaze Hub!",
     PopupContent = "Thank you for using my script! if you found any bug, please report it to the discord.",
     DiscordLink = "https://discord.gg/DKGRny4DD",
@@ -20,20 +20,9 @@ local Window = KazeUI:CreateWindow({
     OpenButton = {
         Icon = "79414074886215",
         Hidable = false,
-        Size = UDim2.fromOffset(65, 65)
+        Size = UDim2.fromOffset(60, 60)
     },
 })
-
-local function collectAll(parent, out, depth)
-	out = out or {}
-	depth = depth or 0
-	if not parent or depth > 15 then return out end
-	for _, child in ipairs(parent:GetChildren()) do
-		table.insert(out, child)
-		collectAll(child, out, depth + 1)
-	end
-	return out
-end
 
 local Player = Window:CreateTab({
     Title = "Player",
@@ -52,19 +41,19 @@ Player:Toggle({
     Default = false,
     Callback = function(s)
         InstantPromptEnabled = s
-
+        
         if promptConnection then
             promptConnection:Disconnect()
             promptConnection = nil
         end
-
+        
         if InstantPromptEnabled then
-            for _, prompt in ipairs(collectAll(Workspace)) do
+            for _, prompt in ipairs(Workspace:GetDescendants()) do
                 if prompt:IsA("ProximityPrompt") then
                     prompt.HoldDuration = 0
                 end
             end
-
+            
             promptConnection = Workspace.DescendantAdded:Connect(function(descendant)
                 if descendant:IsA("ProximityPrompt") then
                     descendant.HoldDuration = 0
@@ -89,11 +78,11 @@ Player:Toggle({
     Default = false,
     Callback = function(s)
         FB_ENABLED = s
-        if fbConnection then
-            fbConnection:Disconnect()
+        if fbConnection then 
+            fbConnection:Disconnect() 
             fbConnection = nil
         end
-
+        
         if FB_ENABLED then
             local function applyBright()
                 Lighting.Ambient = Color3.fromRGB(178, 178, 178)
@@ -102,7 +91,7 @@ Player:Toggle({
                 Lighting.ClockTime = 14
                 Lighting.GlobalShadows = false
             end
-
+            
             applyBright()
             fbConnection = Lighting.Changed:Connect(applyBright)
         else
@@ -127,40 +116,21 @@ Player:Toggle({
     Default = false,
     Callback = function(s)
         NoclipEnabled = s
-
+        
         if noclipConnection then
             noclipConnection:Disconnect()
             noclipConnection = nil
         end
-
+        
         if NoclipEnabled then
-            local _ncChar, _ncParts = nil, {}
-            local function _ncRefresh()
-                local c = LocalPlayer.Character
-                if c == _ncChar and #_ncParts > 0 then return end
-                _ncChar = c
-                _ncParts = {}
-                if c then
-                    for _, p in ipairs(c:GetChildren()) do
-                        if p:IsA("BasePart") then table.insert(_ncParts, p) end
-                        for _, c2 in ipairs(p:GetChildren()) do
-                            if c2:IsA("BasePart") then table.insert(_ncParts, c2) end
+            noclipConnection = RunService.Stepped:Connect(function()
+                local character = LocalPlayer.Character
+                if character then
+                    for _, part in ipairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            if part.CanCollide then part.CanCollide = false end
                         end
                     end
-                end
-            end
-            LocalPlayer.CharacterAdded:Connect(function()
-                _ncChar = nil
-                _ncParts = {}
-                task.defer(function() task.wait(0.05) _ncRefresh() end)
-            end)
-            _ncRefresh()
-            noclipConnection = RunService.Stepped:Connect(function()
-                if not NoclipEnabled then return end
-                if LocalPlayer.Character ~= _ncChar then _ncRefresh() end
-                for i = 1, #_ncParts do
-                    local p = _ncParts[i]
-                    if p and p.Parent and p.CanCollide then p.CanCollide = false end
                 end
             end)
         end
@@ -193,12 +163,12 @@ Player:Toggle({
         end
 
         if TPWalkEnabled then
-            tpWalkConnection = RunService.RenderStepped:Connect(function(dt)
+            tpWalkConnection = RunService.Heartbeat:Connect(function(dt)
                 local character = LocalPlayer.Character
                 if character then
                     local hrp = character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character:FindFirstChildOfClass("Humanoid")
-
+                    
                     if hrp and humanoid and humanoid.MoveDirection.Magnitude > 0 then
                         hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * (TPWalkSpeed * 0.5 * dt * 40))
                     end
@@ -208,6 +178,11 @@ Player:Toggle({
     end
 })
 
+
+
+-- ==========================================
+-- 1. FIXED FLY SCRIPT (NO FALLING ON STOP)
+-- ==========================================
 local TargetFlySpeed = 16
 local FLY_ENABLED = false
 local flyConnection
@@ -227,17 +202,17 @@ Player:Toggle({
     Default = false,
     Callback = function(state)
         FLY_ENABLED = state
-
+        
         local function stopFly()
-            if flyConnection then
-                flyConnection:Disconnect()
-                flyConnection = nil
+            if flyConnection then 
+                flyConnection:Disconnect() 
+                flyConnection = nil 
             end
-
+            
             local character = LocalPlayer.Character
             local hrp = character and character:FindFirstChild("HumanoidRootPart")
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-
+            
             if humanoid then
                 humanoid.PlatformStand = false
             end
@@ -247,37 +222,37 @@ Player:Toggle({
                 hrp.AssemblyLinearVelocity = Vector3.zero
             end
         end
-
+        
         stopFly()
-
+        
         if FLY_ENABLED then
             local camera = Workspace.CurrentCamera
-
+            
             flyConnection = RunService.RenderStepped:Connect(function(dt)
                 local character = LocalPlayer.Character
                 local hrp = character and character:FindFirstChild("HumanoidRootPart")
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-
+                
                 if hrp and humanoid then
                     local moveDir = humanoid.MoveDirection
-
+                    
                     if moveDir.Magnitude > 0 then
-
+                        -- Kapag gumagalaw: Unanchor at galawin ang CFrame
                         hrp.Anchored = false
                         hrp.AssemblyLinearVelocity = Vector3.zero
                         hrp.AssemblyAngularVelocity = Vector3.zero
-
+                        
                         local cameraCF = camera.CFrame
                         local relativeVector = cameraCF:VectorToObjectSpace(moveDir)
                         local flyDirection = (cameraCF.RightVector * relativeVector.X) + (cameraCF.LookVector * -relativeVector.Z)
-
+                        
                         if flyDirection.Magnitude > 0 then
                             flyDirection = flyDirection.Unit
                         end
-
+                        
                         hrp.CFrame = CFrame.lookAlong(hrp.Position, flyDirection) + (flyDirection * (TargetFlySpeed * dt))
                     else
-
+                        -- Kapag huminto: I-anchor ang HRP para hindi bumaba/mahulog
                         hrp.AssemblyLinearVelocity = Vector3.zero
                         hrp.AssemblyAngularVelocity = Vector3.zero
                         hrp.Anchored = true
@@ -323,13 +298,13 @@ local function startAutoPrompt()
 		while isAutoPromptToggled do
 			local rootPart = getCharacterRoot()
 			local mimicFolder = Workspace:FindFirstChild("MimicCurrencySpawns")
-
+			
 			if rootPart and mimicFolder then
 				local yenFolder = mimicFolder:FindFirstChild("Yen")
 				if yenFolder then
 					for _, item in ipairs(yenFolder:GetChildren()) do
 						if not isAutoPromptToggled then break end
-
+						
 						local targetPart = nil
 						if item:IsA("BasePart") then
 							targetPart = item
@@ -352,7 +327,7 @@ local function startAutoPrompt()
 					end
 				end
 			end
-
+			
 			task.wait(0.05)
 		end
 		autoPromptTask = nil
@@ -525,7 +500,7 @@ GameTab:Button({
                 end)
             end
 
-            for _, obj in ipairs(collectAll(Workspace)) do
+            for _, obj in ipairs(Workspace:GetDescendants()) do
                 if DISABLE_PARTICLES and (obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles")) then
                     obj.Enabled = false
                 elseif DISABLE_TEXTURES and (obj:IsA("Decal") or obj:IsA("Texture")) then
@@ -566,7 +541,7 @@ GameTab:Toggle({
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                     end)
                 end
-                RunService.RenderStepped:Wait()
+                task.wait(0.05)
             end
         end)
     end
@@ -598,6 +573,7 @@ GameTab:Toggle({
     end
 })
 
+
 local Cave = Window:CreateTab({
     Title = "Cave",
     Icon = "Book"
@@ -616,6 +592,7 @@ local Street = Window:CreateTab({
     Icon = "construction"
 })
 
+-- Main Group Elements
 Street:Button({
     Title = "Escape Enzukai",
     Callback = function()
@@ -629,6 +606,7 @@ Street:Button({
     end
 })
 
+-- Other Group Elements
 Street:Button({
     Title = "Remove Glass",
     Callback = function()
@@ -691,11 +669,13 @@ local function createESP(model)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = RunService.Heartbeat:Connect(function()
-        if not espEnabled or not model.Parent then
-            billboard:Destroy()
-            highlight:Destroy()
-            conn:Disconnect()
+    local conn = game:GetService("RunService").Heartbeat:Connect(function()
+        if not espEnabled or not model or not model.Parent then
+            pcall(function()
+                if billboard then billboard:Destroy() end
+                if highlight then highlight:Destroy() end
+            end)
+            if conn then conn:Disconnect() end
             return
         end
         local char = LocalPlayer.Character
@@ -752,7 +732,7 @@ WorkPlace:Button({
         if npc and root then
             root.CFrame = npc:GetPivot() + Vector3.new(0, 3, 0)
             task.wait(0.3)
-            for _, prompt in ipairs(collectAll(npc)) do
+            for _, prompt in ipairs(npc:GetDescendants()) do
                 if prompt:IsA("ProximityPrompt") and prompt.Enabled and (prompt.Parent.Position - root.Position).Magnitude <= 8 then
                     fireproximityprompt(prompt)
                     break
@@ -777,7 +757,7 @@ WorkPlace:Button({
             if tpTarget then
                 root.CFrame = tpTarget.CFrame + Vector3.new(0, 3, 0)
                 task.wait(0.3)
-                for _, prompt in ipairs(collectAll(keypad)) do
+                for _, prompt in ipairs(keypad:GetDescendants()) do
                     if prompt:IsA("ProximityPrompt") and prompt.Enabled and (prompt.Parent.Position - root.Position).Magnitude <= 6 then
                         fireproximityprompt(prompt)
                         break
@@ -825,7 +805,7 @@ WorkPlace:Button({
         if shovelGiver and shovelGiver:IsA("BasePart") then
             HRP.CFrame = shovelGiver.CFrame + Vector3.new(0, 3, 0)
             task.wait(0.3)
-            for _, d in ipairs(collectAll(shovelGiver)) do
+            for _, d in ipairs(shovelGiver:GetDescendants()) do
                 if d:IsA("ProximityPrompt") and d.Enabled then
                     fireproximityprompt(d)
                     break
@@ -849,7 +829,7 @@ WorkPlace:Button({
         local dirt = workspace.Section1.PlayerObjective.DirtDigObjective
         if dirt then
             for i = 1, 5 do
-                for _, d in ipairs(collectAll(dirt)) do
+                for _, d in ipairs(dirt:GetDescendants()) do
                     if d:IsA("ProximityPrompt") and d.Enabled then
                         fireproximityprompt(d)
                         task.wait(0.5)
@@ -864,7 +844,7 @@ WorkPlace:Button({
         task.wait(0.3)
         local tpDoor = workspace.Section1.PlayerObjective.TeleportDoor.PROMPT
         if tpDoor then
-            for _, p in ipairs(collectAll(tpDoor)) do
+            for _, p in ipairs(tpDoor:GetDescendants()) do
                 if p:IsA("ProximityPrompt") and p.Enabled then
                     fireproximityprompt(p)
                     break
@@ -885,7 +865,7 @@ WorkPlace:Button({
         if partA then
             root.CFrame = partA.CFrame + Vector3.new(0, 3, 0)
             task.wait(0.25)
-            for _, obj in ipairs(collectAll(workspace)) do
+            for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
                     local parentPart = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
                     if parentPart and (parentPart.Position - root.Position).Magnitude <= 10 then
@@ -900,7 +880,7 @@ WorkPlace:Button({
         local escapePos = CFrame.new(4976, 27, 1220)
         root.CFrame = escapePos
         task.wait(0.25)
-        for _, obj in ipairs(collectAll(workspace)) do
+        for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") and obj.Enabled then
                 local parentPart = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
                 if parentPart and (parentPart.Position - root.Position).Magnitude <= 10 then
@@ -917,6 +897,8 @@ local Mall = Window:CreateTab({
     Icon = "Building-2"
 })
 
+
+-- ==================== MAIN ====================
 Mall:Button({
     Title = "Walkie Talkie",
     Callback = function()
@@ -939,7 +921,7 @@ Mall:Button({
             if target and target:IsA("BasePart") then
                 HRP.CFrame = target.CFrame + Vector3.new(0, 3, 0)
                 task.wait(0.3)
-                for _, obj in ipairs(collectAll(target)) do
+                for _, obj in ipairs(target:GetDescendants()) do
                     if obj:IsA("ProximityPrompt") and obj.Enabled and (obj.Parent.Position - HRP.Position).Magnitude <= 10 then
                         fireproximityprompt(obj)
                         break
@@ -976,7 +958,7 @@ Mall:Button({
     Callback = function()
         local function GetValidPart(Object)
             if Object:IsA("BasePart") and Object.Transparency < 1 then return Object end
-            for _, Child in ipairs(collectAll(Object)) do
+            for _, Child in ipairs(Object:GetDescendants()) do
                 if Child:IsA("BasePart") and Child.Transparency < 1 then return Child end
             end
         end
@@ -988,7 +970,7 @@ Mall:Button({
             if Root and Part then
                 Root.CFrame = Part.CFrame + Vector3.new(0, 3, 0)
                 task.wait(0.25)
-                for _, Descendant in ipairs(collectAll(Object)) do
+                for _, Descendant in ipairs(Object:GetDescendants()) do
                     if Descendant:IsA("ProximityPrompt") and Descendant.Enabled then
                         fireproximityprompt(Descendant)
                         break
@@ -1030,7 +1012,7 @@ Mall:Button({
     Callback = function()
         local function GetValidPart(Object)
             if Object:IsA("BasePart") then return Object end
-            for _, Descendant in ipairs(collectAll(Object)) do
+            for _, Descendant in ipairs(Object:GetDescendants()) do
                 if Descendant:IsA("BasePart") then return Descendant end
             end
         end
@@ -1046,11 +1028,11 @@ Mall:Button({
             local Root = Character and Character:FindFirstChild("HumanoidRootPart")
             if not Root then return false end
 
-            local Tenome = workspace:FindFirstChild("Section2")
-                and workspace.Section2:FindFirstChild("Floor1")
-                and workspace.Section2.Floor1:FindFirstChild("Monster")
+            local Tenome = workspace:FindFirstChild("Section2") 
+                and workspace.Section2:FindFirstChild("Floor1") 
+                and workspace.Section2.Floor1:FindFirstChild("Monster") 
                 and workspace.Section2.Floor1.Monster:FindFirstChild("Tenome")
-
+            
             if Tenome then
                 local TenomePart = GetValidPart(Tenome)
                 if TenomePart then
@@ -1069,15 +1051,16 @@ Mall:Button({
             if not Root then return end
 
             for _, Item in ipairs(Folder:GetChildren()) do
-
+                -- Safety check: Stop immediately if Tenome is within 30 studs
                 if IsTenomeTooClose() then
                     SafeTeleport(Vector3.new(-1333, -165, -1119))
                     return
                 end
 
-                local Tenome = workspace:FindFirstChild("Section2")
-                    and workspace.Section2:FindFirstChild("Floor1")
-                    and workspace.Section2.Floor1:FindFirstChild("Monster")
+                -- Check if Tenome exists and if the current item is the Tenome model
+                local Tenome = workspace:FindFirstChild("Section2") 
+                    and workspace.Section2:FindFirstChild("Floor1") 
+                    and workspace.Section2.Floor1:FindFirstChild("Monster") 
                     and workspace.Section2.Floor1.Monster:FindFirstChild("Tenome")
 
                 if Tenome and (Item == Tenome or Item:IsAncestorOf(Tenome) or Tenome:IsAncestorOf(Item)) then
@@ -1088,13 +1071,13 @@ Mall:Button({
                 if Part then
                     Root.CFrame = Part.CFrame + Vector3.new(0, 3, 0)
                     task.wait(0.25)
-
+                    
                     if IsTenomeTooClose() then
                         SafeTeleport(Vector3.new(-1333, -165, -1119))
                         return
                     end
 
-                    for _, Obj in ipairs(collectAll(Item)) do
+                    for _, Obj in ipairs(Item:GetDescendants()) do
                         if Obj:IsA("ProximityPrompt") and Obj.Enabled then
                             fireproximityprompt(Obj)
                             task.wait(0.25)
@@ -1118,18 +1101,19 @@ Mall:Button({
     end
 })
 
+
 Mall:Button({
     Title = "Auto Speaker Task",
     Callback = function()
         local function GetPart(Object)
             if Object:IsA("BasePart") then return Object end
-            for _, Descendant in ipairs(collectAll(Object)) do
+            for _, Descendant in ipairs(Object:GetDescendants()) do
                 if Descendant:IsA("BasePart") then return Descendant end
             end
         end
 
         local function FirePrompt(Object)
-            for _, Descendant in ipairs(collectAll(Object)) do
+            for _, Descendant in ipairs(Object:GetDescendants()) do
                 if Descendant:IsA("ProximityPrompt") and Descendant.Enabled then
                     fireproximityprompt(Descendant)
                     return true
@@ -1175,7 +1159,7 @@ Mall:Button({
         if tsukiya and tsukiya:IsA("BasePart") then
             HRP.CFrame = tsukiya.CFrame + Vector3.new(0, 3, 0)
             task.wait(0.3)
-            for _, prompt in ipairs(collectAll(tsukiya)) do
+            for _, prompt in ipairs(tsukiya:GetDescendants()) do
                 if prompt:IsA("ProximityPrompt") and prompt.Enabled and (HRP.Position - prompt.Parent.Position).Magnitude <= 10 then
                     fireproximityprompt(prompt)
                     break
@@ -1193,6 +1177,7 @@ Mall:Button({
 
 Mall:Section("ESP")
 
+-- ==================== OTHER ====================
 local espEnabled = false
 local espObjects = {}
 local espConnections = {}
@@ -1240,11 +1225,13 @@ local function createESP(model, name)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = RunService.Heartbeat:Connect(function()
-        if not espEnabled or not model.Parent then
-            if billboard then billboard:Destroy() end
-            if highlight then highlight:Destroy() end
-            conn:Disconnect()
+    local conn = game:GetService("RunService").Heartbeat:Connect(function()
+        if not espEnabled or not model or not model.Parent then
+            pcall(function()
+                if billboard then billboard:Destroy() end
+                if highlight then highlight:Destroy() end
+            end)
+            if conn then conn:Disconnect() end
             return
         end
         local char = LocalPlayer.Character
@@ -1284,52 +1271,46 @@ local MallChase = Window:CreateTab({
 })
 
 MallChase:Button({
-    Title="Escape Chase 1",
-    Callback=function()
-        local TweenService=game:GetService("TweenService")
-        local Players=game:GetService("Players")
-        local LocalPlayer=Players.LocalPlayer
-        local character=LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hrp=character:WaitForChild("HumanoidRootPart")
-        local section25=workspace:FindFirstChild("Section2.5")
-        local chaseSeq=section25 and section25:FindFirstChild("ChaseSequence")
-        if not chaseSeq then return end
+    Title = "Escape Chase 1",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local TweenService = game:GetService("TweenService")
+        local LocalPlayer = Players.LocalPlayer
 
-        local startPoint=chaseSeq:FindFirstChild("StartPoint")
-        local endPoint=chaseSeq:FindFirstChild("EndPoint")
-        local mainChasers=chaseSeq:FindFirstChild("MAINCHASERS")
-        local waypointsFolder=mainChasers and mainChasers:FindFirstChild("Waypoints")
-        if not startPoint or not endPoint or not waypointsFolder then return end
+        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-        hrp.CFrame=startPoint.CFrame
-        task.wait(0.3)
+        local chaseSeq = workspace:WaitForChild("Section2.5"):WaitForChild("ChaseSequence")
+        local startPoint = chaseSeq:WaitForChild("StartPoint")
+        local endPoint = chaseSeq:WaitForChild("EndPoint")
+        local waypointsFolder = chaseSeq:WaitForChild("MAINCHASERS"):WaitForChild("Waypoints")
 
-        local waypoints=waypointsFolder:GetChildren()
-        table.sort(waypoints,function(a,b)
-            local numA=tonumber(a.Name:match("%d+")) or 0
-            local numB=tonumber(b.Name:match("%d+")) or 0
-            return numA<numB
+        -- Instant teleport to StartPoint
+        humanoidRootPart.CFrame = startPoint.CFrame
+        task.wait(0.2)
+
+        -- Get and sort waypoints
+        local waypoints = waypointsFolder:GetChildren()
+        table.sort(waypoints, function(a, b)
+            local numA = tonumber(a.Name:match("%d+")) or 0
+            local numB = tonumber(b.Name:match("%d+")) or 0
+            return numA < numB
         end)
 
-        local tweenInfo=TweenInfo.new(1.3,Enum.EasingStyle.Linear)
+        local tweenSpeed = 1
 
-        for i=2,#waypoints do
-            local waypoint=waypoints[i]
-            local targetCFrame
-            if waypoint:IsA("BasePart") then
-                targetCFrame=waypoint.CFrame
-            elseif waypoint:IsA("Model") then
-                targetCFrame=waypoint:GetPivot()
-            else
-                continue
-            end
-
-            local tween=TweenService:Create(hrp,tweenInfo,{CFrame=targetCFrame})
+        -- Tween from waypoint 2 to 20
+        for i = 2, #waypoints do
+            local waypoint = waypoints[i]
+            local targetCFrame = waypoint:IsA("BasePart") and waypoint.CFrame or CFrame.new(waypoint.Position)
+            local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
             tween:Play()
             tween.Completed:Wait()
         end
 
-        local finalTween=TweenService:Create(hrp,tweenInfo,{CFrame=endPoint.CFrame})
+        -- Final tween to EndPoint
+        local finalCFrame = endPoint:IsA("BasePart") and endPoint.CFrame or CFrame.new(endPoint.Position)
+        local finalTween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = finalCFrame})
         finalTween:Play()
         finalTween.Completed:Wait()
     end
@@ -1346,7 +1327,7 @@ MallChase:Button({
 		local elev = s:FindFirstChild("Elevator")
 		if elev then
 			local parts = {}
-			for _,v in ipairs(collectAll(elev)) do if v:IsA("BasePart") then parts[#parts+1] = v.Position end end
+			for _,v in ipairs(elev:GetDescendants()) do if v:IsA("BasePart") then parts[#parts+1] = v.Position end end
 			if #parts > 0 then
 				local c = Vector3.zero
 				for _,p in ipairs(parts) do c += p end
@@ -1511,73 +1492,75 @@ Parking:Button({
         local Selectors = SectionGui:WaitForChild("Selectors")
         local QuestionLabel = SectionGui:WaitForChild("Questions"):WaitForChild("Question")
 
-        local rawQuestion = QuestionLabel.Text
-        local questionText = rawQuestion:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
+        local rawQuestion = QuestionLabel.Text  
+        local questionText = rawQuestion:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")  
 
-        local answerMap = {
-            ["i was once a curious girl, now i wear a white dress and a pink hat, forever smiling. who am i?"] = "Hiachi Masashige",
-            ["i sit quietly, made of stone, and show the way to a sacred throne. what am i?"] = "Torii Gate",
-            ["flames consume at my decree, yokai kneel and follow me. jealous hearts, i twist and pry, for my father, worlds will die. speak my name, who am i?"] = "Enzukai",
-            ["i guard the shrine in silence, standing still with fierce eyes. what am i?"] = "A Komainu",
-            ["what is our cult name?"] = "Kiiroibara Cult",
-            ["i am pathetic, regretful, and i'm the reason my brother died. who am i?"] = "Me",
-            ["i bloom in spring, soft and sweet, pink and white, on branches i greet. i am kintoru's favorite. what am i?"] = "Cherry Blossom",
-            ["i have no voice, yet i tell stories in ink. i'm soft in your hand, but i carve into time. what am i?"] = "A Brush",
-            ["four i shaped in shadows dire— flames of envy, a burning pyre. chains of control, unyielding, tight, one reborn, one filled with spite, who forged them all? speak my fate."] = "Evil God"
-        }
+        local answerMap = {  
+            ["i was once a curious girl, now i wear a white dress and a pink hat, forever smiling. who am i?"] = "Hiachi Masashige",  
+            ["i sit quietly, made of stone, and show the way to a sacred throne. what am i?"] = "Torii Gate",  
+            ["flames consume at my decree, yokai kneel and follow me. jealous hearts, i twist and pry, for my father, worlds will die. speak my name, who am i?"] = "Enzukai",  
+            ["i guard the shrine in silence, standing still with fierce eyes. what am i?"] = "A Komainu",  
+            ["what is our cult name?"] = "Kiiroibara Cult",  
+            ["i am pathetic, regretful, and i'm the reason my brother died. who am i?"] = "Me",  
+            ["i bloom in spring, soft and sweet, pink and white, on branches i greet. i am kintoru's favorite. what am i?"] = "Cherry Blossom",  
+            ["i have no voice, yet i tell stories in ink. i'm soft in your hand, but i carve into time. what am i?"] = "A Brush",  
+            ["four i shaped in shadows dire— flames of envy, a burning pyre. chains of control, unyielding, tight, one reborn, one filled with spite, who forged them all? speak my fate."] = "Evil God"  
+        }  
 
-        local correctAnswer = answerMap[questionText]
-        if not correctAnswer then
+        local correctAnswer = answerMap[questionText]  
+        if not correctAnswer then  
             Window:Notify({
                 Title = "No Match Found",
                 Content = "Question not recognized:\n\n" .. rawQuestion,
                 Duration = 5
             })
-            return
-        end
+            return  
+        end  
 
-        local chosenIndex = nil
-        for index, selector in ipairs(Selectors:GetChildren()) do
-            local label = selector:FindFirstChild("Label", true)
-            if label and label:IsA("TextLabel") then
-                local answerText = label.Text:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
-                local expected = correctAnswer:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
-                if answerText == expected then
-                    chosenIndex = index
-                    break
-                end
-            end
-        end
+        local chosenIndex = nil  
+        for index, selector in ipairs(Selectors:GetChildren()) do  
+            local label = selector:FindFirstChild("Label", true)  
+            if label and label:IsA("TextLabel") then  
+                local answerText = label.Text:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")  
+                local expected = correctAnswer:lower():gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")  
+                if answerText == expected then  
+                    chosenIndex = index  
+                    break  
+                end  
+            end  
+        end  
 
-        if chosenIndex then
-            local triviaSignal = workspace:FindFirstChild("Section2.5")
-                and workspace["Section2.5"]:FindFirstChild("ChihiroMinigame")
-                and workspace["Section2.5"].ChihiroMinigame:FindFirstChild("Trivia")
-                and workspace["Section2.5"].ChihiroMinigame.Trivia:FindFirstChild("Signal")
+        if chosenIndex then  
+            local triviaSignal = workspace:FindFirstChild("Section2.5")  
+                and workspace["Section2.5"]:FindFirstChild("ChihiroMinigame")  
+                and workspace["Section2.5"].ChihiroMinigame:FindFirstChild("Trivia")  
+                and workspace["Section2.5"].ChihiroMinigame.Trivia:FindFirstChild("Signal")  
 
-            if triviaSignal then
-                triviaSignal:FireServer(1, chosenIndex)
-
+            if triviaSignal then  
+                triviaSignal:FireServer(1, chosenIndex)  
+                -- Using KazeUI's built-in notification system
                 Window:Notify({
                     Title = "Correct Answer Found",
                     Content = "Answer: " .. correctAnswer,
                     Duration = 5
                 })
-            end
-        else
+            end  
+        else  
             Window:Notify({
                 Title = "Answer Not Found",
                 Content = "Correct answer (" .. correctAnswer .. ") wasn’t in the 3 choices.",
                 Duration = 5
             })
-        end
+        end  
     end
 })
+
 
 local Temple = Window:CreateTab({
     Title = "Temple",
     Icon = "Landmark"
 })
+
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -1585,6 +1568,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local selectedPaint = "Paint A"
 
+-- Utility helper to safely get nested instances without throwing errors if unloaded
 local function GetPath(...)
     local current = workspace
     for _, name in ipairs({...}) do
@@ -1599,7 +1583,7 @@ local function GetValidPart(model)
     if model:IsA("BasePart") then return model end
     if model:IsA("Model") then
         if model.PrimaryPart then return model.PrimaryPart end
-        for _, v in ipairs(collectAll(model)) do
+        for _, v in ipairs(model:GetDescendants()) do
             if v:IsA("BasePart") then return v end
         end
     end
@@ -1647,11 +1631,11 @@ Temple:Button({
             if not target then return end
             local part = GetValidPart(target)
             if not part then return end
-
+            
             HRP.CFrame = part.CFrame + Vector3.new(0, 3, 0)
             task.wait(0.3)
-
-            for _, prompt in ipairs(collectAll(target)) do
+            
+            for _, prompt in ipairs(target:GetDescendants()) do
                 if prompt:IsA("ProximityPrompt") and prompt.Enabled then
                     if fireproximityprompt then
                         fireproximityprompt(prompt)
@@ -1675,6 +1659,7 @@ Temple:Button({
     end
 })
 
+-- ==================== PAINT DRAWING ====================
 local StationPoints = {
     PaintStation_A = {Vector2.new(29,44),Vector2.new(34,44),Vector2.new(39,45),Vector2.new(43,46),Vector2.new(47,46),Vector2.new(51,46),Vector2.new(56,46),Vector2.new(61,45),Vector2.new(66,44),Vector2.new(71,44),Vector2.new(75,44),Vector2.new(79,43),Vector2.new(83,43),Vector2.new(87,43),Vector2.new(91,43),Vector2.new(95,43),Vector2.new(99,44),Vector2.new(104,44),Vector2.new(108,44),Vector2.new(112,44),Vector2.new(116,44),Vector2.new(120,44),Vector2.new(124,45),Vector2.new(128,45),Vector2.new(131,49),Vector2.new(133,53),Vector2.new(134,57),Vector2.new(58,72),Vector2.new(58,68),Vector2.new(58,64),Vector2.new(59,59),Vector2.new(59,55),Vector2.new(59,50),Vector2.new(59,39),Vector2.new(60,34),Vector2.new(31,104),Vector2.new(35,104),Vector2.new(39,104),Vector2.new(44,104),Vector2.new(49,104),Vector2.new(53,104),Vector2.new(57,104),Vector2.new(61,104),Vector2.new(65,104),Vector2.new(69,104),Vector2.new(73,105),Vector2.new(74,109),Vector2.new(73,113),Vector2.new(73,117),Vector2.new(73,121),Vector2.new(73,125),Vector2.new(73,100),Vector2.new(73,96),Vector2.new(74,92),Vector2.new(74,88),Vector2.new(74,84),Vector2.new(45,86),Vector2.new(45,90),Vector2.new(46,95),Vector2.new(45,99),Vector2.new(45,109),Vector2.new(46,113),Vector2.new(45,117),Vector2.new(45,121),Vector2.new(82,70),Vector2.new(86,67),Vector2.new(90,64),Vector2.new(94,62),Vector2.new(98,61),Vector2.new(81,104),Vector2.new(86,103),Vector2.new(90,103),Vector2.new(94,103),Vector2.new(98,103),Vector2.new(102,102),Vector2.new(106,103),Vector2.new(110,103),Vector2.new(114,103),Vector2.new(118,103),Vector2.new(122,103),Vector2.new(125,107),Vector2.new(126,111),Vector2.new(128,116),Vector2.new(129,120),Vector2.new(130,124),Vector2.new(130,112),Vector2.new(129,106),Vector2.new(129,102),Vector2.new(127,97),Vector2.new(126,93),Vector2.new(125,89),Vector2.new(123,85),Vector2.new(121,81),Vector2.new(100,88),Vector2.new(100,92),Vector2.new(100,97),Vector2.new(98,107),Vector2.new(97,112),Vector2.new(97,116),Vector2.new(101,118)},
     PaintStation_B = {Vector2.new(28,109),Vector2.new(32,109),Vector2.new(36,111),Vector2.new(40,113),Vector2.new(44,116),Vector2.new(48,119),Vector2.new(51,123),Vector2.new(53,127),Vector2.new(35,105),Vector2.new(39,102),Vector2.new(42,98),Vector2.new(46,96),Vector2.new(64,119),Vector2.new(64,115),Vector2.new(63,111),Vector2.new(63,107),Vector2.new(63,103),Vector2.new(63,99),Vector2.new(68,110),Vector2.new(72,110),Vector2.new(76,110),Vector2.new(80,110),Vector2.new(84,110),Vector2.new(82,114),Vector2.new(82,118),Vector2.new(82,122),Vector2.new(83,126),Vector2.new(84,105),Vector2.new(83,101),Vector2.new(83,97),Vector2.new(99,125),Vector2.new(103,125),Vector2.new(107,125),Vector2.new(111,123),Vector2.new(90,109),Vector2.new(94,109),Vector2.new(98,109),Vector2.new(102,109),Vector2.new(106,109),Vector2.new(110,109),Vector2.new(114,109),Vector2.new(118,109),Vector2.new(122,109),Vector2.new(126,109),Vector2.new(130,109),Vector2.new(130,113),Vector2.new(131,117),Vector2.new(133,121),Vector2.new(133,125),Vector2.new(129,105),Vector2.new(128,100),Vector2.new(127,96),Vector2.new(125,92),Vector2.new(113,98),Vector2.new(109,96),Vector2.new(105,96),Vector2.new(101,95),Vector2.new(138,90),Vector2.new(136,86),Vector2.new(134,82),Vector2.new(132,78),Vector2.new(131,74),Vector2.new(129,70),Vector2.new(126,49),Vector2.new(128,45),Vector2.new(130,41),Vector2.new(131,36),Vector2.new(133,32),Vector2.new(135,38),Vector2.new(137,34),Vector2.new(133,27),Vector2.new(26,59),Vector2.new(30,59),Vector2.new(35,59),Vector2.new(40,59),Vector2.new(40,64),Vector2.new(39,70),Vector2.new(38,74),Vector2.new(38,78),Vector2.new(43,80),Vector2.new(46,84),Vector2.new(42,84),Vector2.new(38,55),Vector2.new(38,49),Vector2.new(37,45),Vector2.new(36,40),Vector2.new(36,36),Vector2.new(49,59),Vector2.new(53,59),Vector2.new(57,59),Vector2.new(57,63),Vector2.new(57,67),Vector2.new(56,71),Vector2.new(56,75),Vector2.new(60,76),Vector2.new(64,77),Vector2.new(68,77),Vector2.new(72,77),Vector2.new(76,78),Vector2.new(80,78),Vector2.new(85,79),Vector2.new(89,79),Vector2.new(93,79),Vector2.new(97,79),Vector2.new(100,75),Vector2.new(99,71),Vector2.new(99,67),Vector2.new(99,63),Vector2.new(100,58),Vector2.new(100,54),Vector2.new(100,50),Vector2.new(100,46),Vector2.new(99,42),Vector2.new(95,39),Vector2.new(91,38),Vector2.new(87,38),Vector2.new(83,38),Vector2.new(79,39),Vector2.new(75,39),Vector2.new(71,39),Vector2.new(67,40),Vector2.new(63,41),Vector2.new(59,45),Vector2.new(59,49),Vector2.new(71,70),Vector2.new(70,66),Vector2.new(71,62),Vector2.new(70,57),Vector2.new(70,53),Vector2.new(70,49),Vector2.new(84,72),Vector2.new(84,67),Vector2.new(84,63),Vector2.new(84,55),Vector2.new(84,51),Vector2.new(85,47),Vector2.new(114,86),Vector2.new(114,82),Vector2.new(115,77),Vector2.new(115,73),Vector2.new(115,68),Vector2.new(115,62),Vector2.new(115,58),Vector2.new(115,54),Vector2.new(115,50),Vector2.new(115,46),Vector2.new(116,42),Vector2.new(115,38),Vector2.new(118,34)},
@@ -1716,7 +1701,7 @@ Temple:Button({
     Callback = function()
         local nearestStation = getNearestStation()
         if nearestStation and nearestStation.Remote then
-
+            -- Fires all points instantly without any task.wait delays
             for _, point in ipairs(nearestStation.Points) do
                 nearestStation.Remote:FireServer(CFrame.new(), point, 0)
             end
@@ -1725,6 +1710,7 @@ Temple:Button({
         end
     end
 })
+
 
 local currentPillarIndex = 1
 local totalPillars = 4
@@ -1792,6 +1778,7 @@ Temple:Button({
             end
         end
 
+        -- Collect Magic Bow
         local magicBow = GetPath("Section3", "BowPuzzle", "MagicBow")
         if magicBow then
             pivotTeleport(magicBow)
@@ -1800,6 +1787,7 @@ Temple:Button({
 
         task.wait(5)
 
+        -- Exit (GameStart)
         local gameStart = GetPath("Section3", "Monster", "GameStart")
         if gameStart then
             pivotTeleport(gameStart)
@@ -1856,11 +1844,13 @@ local function createESP(model, name)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = RunService.Heartbeat:Connect(function()
-        if not espEnabled or not model.Parent then
-            if billboard then billboard:Destroy() end
-            if highlight then highlight:Destroy() end
-            conn:Disconnect()
+    local conn = game:GetService("RunService").Heartbeat:Connect(function()
+        if not espEnabled or not model or not model.Parent then
+            pcall(function()
+                if billboard then billboard:Destroy() end
+                if highlight then highlight:Destroy() end
+            end)
+            if conn then conn:Disconnect() end
             return
         end
         local char = LocalPlayer.Character
@@ -1886,6 +1876,7 @@ Temple:Toggle({
         end
     end
 })
+
 
 local StreetTokyo = Window:CreateTab({
     Title = "Street Tokyo",
@@ -1927,7 +1918,7 @@ StreetTokyo:Button({
             if targetPart then
                 HRP.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
                 task.wait(0.2)
-                for _, obj in ipairs(collectAll(pose)) do
+                for _, obj in ipairs(pose:GetDescendants()) do
                     if obj:IsA("ProximityPrompt") and obj.Enabled then
                         fireproximityprompt(obj)
                     end
@@ -1943,6 +1934,7 @@ StreetTokyo:Button({
     end
 })
 
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1950,6 +1942,9 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
+--------------------------------------------------------------------------------
+-- State Management
+--------------------------------------------------------------------------------
 local isToggled = false
 local mainTask = nil
 local floatConnection = nil
@@ -1957,9 +1952,14 @@ local currentHoverCFrame = nil
 local activeTween = nil
 local isFlightActive = false
 
+--------------------------------------------------------------------------------
+-- Helper Functions
+--------------------------------------------------------------------------------
+
+-- Calculate mathematically perfect aim direction with drop compensation
 local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
     if not targetPart then return Vector3.new(0, 1, 0) end
-
+    
     local originPart = bow and (bow:FindFirstChild("Handle") or bow:FindFirstChild("Muzzle"))
     local originPos = originPart and originPart.Position or (fallbackRoot and fallbackRoot.Position)
     if not originPos then return Vector3.new(0, 1, 0) end
@@ -1969,7 +1969,7 @@ local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
     local distance = (targetPos - originPos).Magnitude
     local flightTime = distance / speed
     local gravity = Workspace.Gravity
-
+    
     local dropCompensation = Vector3.new(0, 0.5 * gravity * (flightTime ^ 2), 0)
     local adjustedTarget = targetPos + dropCompensation
 
@@ -1981,9 +1981,10 @@ local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
     return (adjustedTarget - originPos).Unit
 end
 
+-- Smooth Tween Function
 local function tweenTo(rootPart, targetCFrame, duration)
     if not rootPart or not rootPart.Parent then return end
-
+    
     if activeTween then
         activeTween:Cancel()
         activeTween = nil
@@ -1994,6 +1995,7 @@ local function tweenTo(rootPart, targetCFrame, duration)
     activeTween:Play()
 end
 
+-- Equip SpiritBow from Backpack or Character
 local function equipSpiritBow(character, humanoid)
     local bowInChar = character:FindFirstChild("SpiritBow")
     if bowInChar then return bowInChar end
@@ -2004,10 +2006,11 @@ local function equipSpiritBow(character, humanoid)
         task.wait(0.2)
         return character:FindFirstChild("SpiritBow")
     end
-
+    
     return nil
 end
 
+-- Hold position in mid-air
 local function enableFloat(rootPart)
     if floatConnection then return end
     floatConnection = RunService.PreRender:Connect(function()
@@ -2034,6 +2037,7 @@ local function disableFloat()
     currentHoverCFrame = nil
 end
 
+-- Find active weak point model
 local function findActiveWeakPoint()
     local section4 = Workspace:FindFirstChild("Section4")
     if not section4 then return nil end
@@ -2057,6 +2061,7 @@ local function findActiveWeakPoint()
     return nil
 end
 
+-- Check if specific secondary monsters are near a given position
 local function areInterferingMonstersNearby(targetPosition, maxDistance)
     local section4 = Workspace:FindFirstChild("Section4")
     if not section4 then return false end
@@ -2077,7 +2082,7 @@ local function areInterferingMonstersNearby(targetPosition, maxDistance)
         if monster then
             local hrp = monster:FindFirstChild("HumanoidRootPart") or monster:FindFirstChildOfClass("BasePart")
             local humanoid = monster:FindFirstChildOfClass("Humanoid")
-
+            
             if hrp and (not humanoid or humanoid.Health > 0) then
                 if (hrp.Position - targetPosition).Magnitude <= maxDistance then
                     return true
@@ -2089,6 +2094,7 @@ local function areInterferingMonstersNearby(targetPosition, maxDistance)
     return false
 end
 
+-- Fetch Boss references (Gamitin ang Plane.015 kapag wala ang Plane.009)
 local function getBossReferences()
     local section4 = Workspace:FindFirstChild("Section4")
     if not section4 then return nil end
@@ -2099,8 +2105,9 @@ local function getBossReferences()
     local enzukaiRyu = bossMonster:FindFirstChild("EnzukaiRyu")
     if not enzukaiRyu then return nil end
 
-    local targetPlane = enzukaiRyu:FindFirstChild("Plane.009")
-        or enzukaiRyu:FindFirstChild("Plane.015")
+    -- Unang hahanapin ang Plane.009, kapag wala, gagamitin ang Plane.015 (o Plane.014)
+    local targetPlane = enzukaiRyu:FindFirstChild("Plane.009") 
+        or enzukaiRyu:FindFirstChild("Plane.015") 
         or enzukaiRyu:FindFirstChild("Plane.014")
 
     local hitBox = enzukaiRyu:FindFirstChild("Hitbox") or targetPlane
@@ -2110,6 +2117,10 @@ local function getBossReferences()
 
     return targetPlane, hitBox, hitEvent, flightSFX
 end
+
+--------------------------------------------------------------------------------
+-- Sequence Automation Logic
+--------------------------------------------------------------------------------
 
 local function runCombinedAutomation()
     local hitEventConnection = nil
@@ -2126,13 +2137,16 @@ local function runCombinedAutomation()
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
 
-        if not rootPart or not humanoid then
+        if not rootPart or not humanoid then 
             task.wait(0.5)
-            continue
+            continue 
         end
 
+        ------------------------------------------------------------------------
+        -- STEP 1: Weak Points Phase
+        ------------------------------------------------------------------------
         local activeModel, iconGui = findActiveWeakPoint()
-
+        
         if activeModel and iconGui then
             local modelPos = activeModel:GetPivot().Position
             if areInterferingMonstersNearby(modelPos, 60) then
@@ -2149,13 +2163,13 @@ local function runCombinedAutomation()
                     local eyeNames = {"EyeA", "EyeB", "EyeC", "EyeD", "EyeE"}
                     for _, eyeName in ipairs(eyeNames) do
                         if not isToggled then break end
-
+                        
                         local targetEye = activeModel:FindFirstChild(eyeName)
                         if targetEye and targetEye:IsA("BasePart") then
                             while isToggled and targetEye.Transparency == 0 and iconGui.Enabled do
                                 local eyePos = targetEye.Position
                                 local standPos = targetEye.CFrame * CFrame.new(0, 30, 25)
-
+                                
                                 currentHoverCFrame = CFrame.lookAt(standPos.Position, eyePos)
                                 rootPart.CFrame = currentHoverCFrame
 
@@ -2175,6 +2189,9 @@ local function runCombinedAutomation()
             end
         end
 
+        ------------------------------------------------------------------------
+        -- STEP 2: Boss Phase (Gamitin ang Plane.009 o Plane.015)
+        ------------------------------------------------------------------------
         isFlightActive = false
         local planeTarget, hitBox, _, flightSFX = getBossReferences()
 
@@ -2204,7 +2221,8 @@ local function runCombinedAutomation()
 
                         local targetHitBox = currentHitBox or currentPlane
                         local targetPos = targetHitBox.Position
-
+                        
+                        -- Position underneath the ground using -100 offset on Y
                         local undergroundPos = currentPlane.Position - Vector3.new(0, 70, 0)
                         local bossCFrame = CFrame.lookAt(undergroundPos, targetPos)
                         currentHoverCFrame = bossCFrame
@@ -2244,6 +2262,9 @@ local function runCombinedAutomation()
             end
         end
 
+        ------------------------------------------------------------------------
+        -- STEP 3: Safe Wait Position (30, 126, -2868) & Idle
+        ------------------------------------------------------------------------
         disableFloat()
 
         if isToggled then
@@ -2265,6 +2286,10 @@ local function runCombinedAutomation()
     end
     disableFloat()
 end
+
+--------------------------------------------------------------------------------
+-- UI Binding
+--------------------------------------------------------------------------------
 
 local success, err = pcall(function()
     if type(StreetTokyo) == "table" and type(StreetTokyo.Toggle) == "function" then
@@ -2316,6 +2341,8 @@ if not success then
     warn("UI Load Warning: " .. tostring(err))
 end
 
+
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -2323,15 +2350,23 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
+--------------------------------------------------------------------------------
+-- State Management
+--------------------------------------------------------------------------------
 local isToggled = false
 local mainTask = nil
 local floatConnection = nil
 local currentHoverCFrame = nil
 local activeTween = nil
 
+--------------------------------------------------------------------------------
+-- Helper Functions
+--------------------------------------------------------------------------------
+
+-- Smooth Tween Function
 local function tweenTo(rootPart, targetCFrame, duration)
     if not rootPart or not rootPart.Parent then return end
-
+    
     if activeTween then
         activeTween:Cancel()
         activeTween = nil
@@ -2342,6 +2377,7 @@ local function tweenTo(rootPart, targetCFrame, duration)
     activeTween:Play()
 end
 
+-- Equip SpiritBow
 local function equipSpiritBow(character, humanoid)
     local bowInChar = character:FindFirstChild("SpiritBow")
     if bowInChar then return bowInChar end
@@ -2352,10 +2388,11 @@ local function equipSpiritBow(character, humanoid)
         task.wait(0.2)
         return character:FindFirstChild("SpiritBow")
     end
-
+    
     return nil
 end
 
+-- Hold position & zero out physical momentum
 local function enableFloat(rootPart)
     if floatConnection then return end
     floatConnection = RunService.PreRender:Connect(function()
@@ -2382,6 +2419,7 @@ local function disableFloat()
     currentHoverCFrame = nil
 end
 
+-- Safely trigger ProximityPrompt
 local function triggerPrompt(prompt)
     if not prompt or not prompt.Enabled then return false end
 
@@ -2395,6 +2433,7 @@ local function triggerPrompt(prompt)
     return true
 end
 
+-- Check if ProximityPrompt exists and is enabled
 local function checkPrompt(monsterModel, hrp)
     if hrp then
         local foundPrompt = hrp:FindFirstChildOfClass("ProximityPrompt") or monsterModel:FindFirstChildOfClass("ProximityPrompt", true)
@@ -2405,6 +2444,7 @@ local function checkPrompt(monsterModel, hrp)
     return nil
 end
 
+-- Check UI Boss Health AbsoluteSize (Triggered when width <= 0)
 local function isBossHealthZero()
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
@@ -2421,6 +2461,9 @@ local function isBossHealthZero()
     return front.AbsoluteSize.X <= 0
 end
 
+--------------------------------------------------------------------------------
+-- Target Monster List
+--------------------------------------------------------------------------------
 local monsterTargets = {
     { folder = "Monster2", name = "Rin2" },
     { folder = "Monster3", name = "Tenome2" },
@@ -2443,17 +2486,24 @@ local function getMonsterReferences(targetInfo)
     return model, hrp, hitBox
 end
 
+--------------------------------------------------------------------------------
+-- Continuous Attack & Sequence Logic
+--------------------------------------------------------------------------------
+
 local function runTripleMonsterSequence()
     while isToggled do
         local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
 
-        if not rootPart or not humanoid then
+        if not rootPart or not humanoid then 
             task.wait(0.5)
-            continue
+            continue 
         end
 
+        ------------------------------------------------------------------------
+        -- STEP 1: Wait at Safe Position (30, 126, -2868) until Boss Health == 0
+        ------------------------------------------------------------------------
         enableFloat(rootPart)
         local waitCFrame = CFrame.new(30, 126, -2868)
 
@@ -2465,6 +2515,9 @@ local function runTripleMonsterSequence()
 
         if not isToggled then break end
 
+        ------------------------------------------------------------------------
+        -- STEP 2: Fire Notification when condition is met
+        ------------------------------------------------------------------------
         if Window and Window.Notify then
             Window:Notify({
                 Title = "Kill Enzukai Ryu",
@@ -2475,13 +2528,16 @@ local function runTripleMonsterSequence()
 
         task.wait(0.5)
 
+        ------------------------------------------------------------------------
+        -- STEP 3: Sequence through 3 Monsters
+        ------------------------------------------------------------------------
         for _, targetInfo in ipairs(monsterTargets) do
             if not isToggled then break end
 
             local monsterModel, hrp, hitBox = getMonsterReferences(targetInfo)
 
             if monsterModel and hrp and hitBox then
-
+                -- Initial position 15 studs behind monster looking at Hitbox
                 local standPos = (hrp.CFrame * CFrame.new(0, 0, 15)).Position
                 local targetCFrame = CFrame.lookAt(standPos, hitBox.Position)
                 rootPart.CFrame = targetCFrame
@@ -2492,6 +2548,9 @@ local function runTripleMonsterSequence()
                 local spiritBow = equipSpiritBow(character, humanoid)
                 local remoteEvent = spiritBow and spiritBow:FindFirstChild("RemoteEvent")
 
+                ----------------------------------------------------------------
+                -- Continuous Attack Loop until ProximityPrompt appears
+                ----------------------------------------------------------------
                 local startTime = tick()
 
                 while isToggled and not promptInstance and (tick() - startTime) < 25 do
@@ -2536,12 +2595,15 @@ local function runTripleMonsterSequence()
                     promptInstance = checkPrompt(monsterModel, hrp)
                 end
 
+                ----------------------------------------------------------------
+                -- ProximityPrompt Trigger Loop
+                ----------------------------------------------------------------
                 if isToggled and promptInstance then
                     local promptStartTime = tick()
 
                     while isToggled and (tick() - promptStartTime) < 5 do
                         if not promptInstance or not promptInstance.Parent or not promptInstance.Enabled then
-                            break
+                            break -- Prompt activated/consumed!
                         end
 
                         if hrp and hrp:IsA("BasePart") then
@@ -2554,9 +2616,12 @@ local function runTripleMonsterSequence()
                     end
                 end
 
+                ----------------------------------------------------------------
+                -- WAIT FOR TARGET TO BE DELETED / DESPAWNED FROM WORKSPACE
+                ----------------------------------------------------------------
                 local waitStart = tick()
                 while isToggled and monsterModel and monsterModel.Parent and (tick() - waitStart) < 10 do
-
+                    -- Keep player floating at the current spot while waiting for despawn
                     if hrp and hrp:IsA("BasePart") then
                         rootPart.CFrame = hrp.CFrame
                         currentHoverCFrame = hrp.CFrame
@@ -2574,6 +2639,10 @@ local function runTripleMonsterSequence()
     disableFloat()
     isToggled = false
 end
+
+--------------------------------------------------------------------------------
+-- UI Binding
+--------------------------------------------------------------------------------
 
 StreetTokyo:Toggle({
     Title = "Auto 3 Monsters",
@@ -2835,6 +2904,7 @@ local function startPositionTracker()
 
 		local x = hitbox.Position.X
 
+		-- Arm the next dodge only after Ryujin leaves the danger area.
 		if x > HEAD_X_THRESHOLD + 20 then
 			dodgeArmed = true
 		end
