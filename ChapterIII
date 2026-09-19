@@ -632,6 +632,434 @@ GameTab:Toggle({
     end
 })
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+local AutoBossEnabled = false
+local BossTween = nil
+local BossFollowConnection = nil
+local BossFireTask = nil
+
+local BOSS_DISTANCE = 60
+local BOSS_Y = 42
+local TWEEN_TIME = 0.18
+local FIRE_DELAY = 0.12
+
+local function getCharacter()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function getHRP()
+    local character = getCharacter()
+    return character:FindFirstChild("HumanoidRootPart")
+end
+
+local function getChenooHitbox()
+    local XmasEvent = workspace:FindFirstChild("XmasEvent")
+    local Boss = XmasEvent and XmasEvent:FindFirstChild("Boss")
+    local Chenoo = Boss and Boss:FindFirstChild("Chenoo")
+    return Chenoo and Chenoo:FindFirstChild("ChenooHitboxHead")
+end
+
+local function getBossFrontCFrame(hitbox)
+    if not hitbox then
+        return nil
+    end
+
+    local cf = hitbox.CFrame
+    local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+
+    if flatLook.Magnitude == 0 then
+        return nil
+    end
+
+    flatLook = flatLook.Unit
+
+    local pos = cf.Position + flatLook * BOSS_DISTANCE
+
+    return CFrame.lookAt(
+        Vector3.new(pos.X, BOSS_Y, pos.Z),
+        Vector3.new(cf.Position.X, BOSS_Y, cf.Position.Z),
+        Vector3.yAxis
+    )
+end
+
+local function getShotgun()
+    local character = getCharacter()
+    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+
+    local shotgun = character:FindFirstChild("Shotgun")
+
+    if shotgun then
+        return shotgun
+    end
+
+    if backpack then
+        shotgun = backpack:FindFirstChild("Shotgun")
+
+        if shotgun then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+            if humanoid then
+                humanoid:EquipTool(shotgun)
+            end
+
+            task.wait()
+
+            return character:FindFirstChild("Shotgun") or shotgun
+        end
+    end
+
+    return nil
+end
+
+local function getShotgunRemote()
+    local shotgun = getShotgun()
+    return shotgun and shotgun:FindFirstChild("Remote")
+end
+
+local function getAmmoText()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local shotgunUI = playerGui and playerGui:FindFirstChild("ShotgunUI")
+    local ammo = shotgunUI and shotgunUI:FindFirstChild("Ammo")
+
+    if not ammo then
+        return nil
+    end
+
+    local ok, text = pcall(function()
+        return ammo.ContentText
+    end)
+
+    if ok and text ~= nil then
+        return tostring(text)
+    end
+
+    local contentText = ammo:FindFirstChild("ContentText")
+
+    if contentText then
+        local ok2, value = pcall(function()
+            return contentText.Text
+        end)
+
+        if ok2 then
+            return tostring(value)
+        end
+    end
+
+    return nil
+end
+
+local function getAmmo()
+    local text = getAmmoText()
+
+    if not text then
+        return nil, nil
+    end
+
+    text = text:gsub("%s+", "")
+
+    local current, maximum = text:match("(%d+)%/(%d+)")
+
+    return tonumber(current), tonumber(maximum)
+end
+
+local function isAmmoZeroZero()
+    local current, maximum = getAmmo()
+    return current == 0 and maximum == 0
+end
+
+local function reloadShotgun()
+    local remote = getShotgunRemote()
+
+    if not remote then
+        return false
+    end
+
+    pcall(function()
+        remote:FireServer({
+            [1] = "Reload"
+        })
+    end)
+
+    task.wait(0.2)
+
+    return true
+end
+
+local function fireShotgun()
+    local remote = getShotgunRemote()
+    local hitbox = getChenooHitbox()
+    local hrp = getHRP()
+
+    if not remote or not hitbox or not hrp then
+        return false
+    end
+
+    local aimCFrame = CFrame.lookAt(
+        hrp.Position,
+        hitbox.Position,
+        Vector3.yAxis
+    )
+
+    pcall(function()
+        remote:FireServer({
+            [1] = "Fire",
+            [2] = aimCFrame
+        })
+    end)
+
+    return true
+end
+
+local function findAmmoObject()
+    local XmasEvent = workspace:FindFirstChild("XmasEvent")
+    local crates = XmasEvent and XmasEvent:FindFirstChild("AmmoCrates")
+
+    if not crates then
+        return nil, nil
+    end
+
+    for _, object in ipairs(crates:GetChildren()) do
+        local prompt = object:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+        if prompt then
+            return object, prompt
+        end
+    end
+
+    return nil, nil
+end
+
+local function getObjectPart(object)
+    if not object then
+        return nil
+    end
+
+    if object:IsA("BasePart") then
+        return object
+    end
+
+    if object:IsA("Attachment") and object.Parent:IsA("BasePart") then
+        return object.Parent
+    end
+
+    if object:IsA("Model") then
+        return object.PrimaryPart
+            or object:FindFirstChildWhichIsA("BasePart", true)
+    end
+
+    return object:FindFirstChildWhichIsA("BasePart", true)
+end
+
+local function fireAmmoPrompt(prompt)
+    if not prompt or not prompt.Parent then
+        return false
+    end
+
+    if fireproximityprompt then
+        pcall(function()
+            fireproximityprompt(prompt)
+        end)
+
+        return true
+    end
+
+    pcall(function()
+        prompt:InputHoldBegin()
+        task.wait(math.max(prompt.HoldDuration, 0.05))
+        prompt:InputHoldEnd()
+    end)
+
+    return true
+end
+
+local function collectAmmo()
+    local hrp = getHRP()
+
+    if not hrp then
+        return false
+    end
+
+    local object, prompt = findAmmoObject()
+
+    if not object or not prompt then
+        return false
+    end
+
+    local part = getObjectPart(object)
+
+    if not part then
+        return false
+    end
+
+    hrp.CFrame = part.CFrame + Vector3.new(0, 2, 0)
+
+    task.wait(0.2)
+
+    fireAmmoPrompt(prompt)
+
+    task.wait(0.4)
+
+    if isAmmoZeroZero() then
+        fireAmmoPrompt(prompt)
+        task.wait(0.4)
+    end
+
+    return not isAmmoZeroZero()
+end
+
+local function stopBoss()
+    if BossFollowConnection then
+        BossFollowConnection:Disconnect()
+        BossFollowConnection = nil
+    end
+
+    if BossTween then
+        BossTween:Cancel()
+        BossTween = nil
+    end
+
+    BossFireTask = nil
+end
+
+local function startBoss()
+    stopBoss()
+
+    local hrp = getHRP()
+    local hitbox = getChenooHitbox()
+
+    if not hrp or not hitbox then
+        return
+    end
+
+    local firstCFrame = getBossFrontCFrame(hitbox)
+
+    if not firstCFrame then
+        return
+    end
+
+    hrp.CFrame = firstCFrame
+
+    BossFollowConnection = RunService.Heartbeat:Connect(function()
+        if not AutoBossEnabled then
+            return
+        end
+
+        local currentHRP = getHRP()
+        local currentHitbox = getChenooHitbox()
+
+        if not currentHRP or not currentHitbox then
+            return
+        end
+
+        local targetCFrame = getBossFrontCFrame(currentHitbox)
+
+        if not targetCFrame then
+            return
+        end
+
+        if not BossTween
+            or BossTween.PlaybackState ~= Enum.PlaybackState.Playing then
+
+            BossTween = TweenService:Create(
+                currentHRP,
+                TweenInfo.new(
+                    TWEEN_TIME,
+                    Enum.EasingStyle.Linear,
+                    Enum.EasingDirection.Out
+                ),
+                {
+                    CFrame = targetCFrame
+                }
+            )
+
+            BossTween:Play()
+        end
+    end)
+
+    BossFireTask = task.spawn(function()
+        local lastFire = 0
+
+        while AutoBossEnabled do
+            local shotgun = getShotgun()
+
+            if not shotgun then
+                task.wait(0.2)
+                continue
+            end
+
+            local ammo, maximum = getAmmo()
+
+            if ammo == nil then
+                task.wait(0.15)
+                continue
+            end
+
+            if ammo == 0 and maximum == 0 then
+                collectAmmo()
+                task.wait(0.2)
+                continue
+            end
+
+            if ammo == 0 and maximum and maximum > 0 then
+                reloadShotgun()
+                task.wait(0.2)
+                continue
+            end
+
+            if os.clock() - lastFire >= FIRE_DELAY then
+                if fireShotgun() then
+                    lastFire = os.clock()
+                end
+            end
+
+            task.wait()
+        end
+    end)
+end
+
+local ChristmasSection = Game:SectionUI({
+    Title = "Christmas Event",
+    Open = false
+})
+
+ChristmasSection:Button({
+    Title = "Boss Trigger",
+    Callback = function()
+        local hrp = getHRP()
+
+        if not hrp then
+            return
+        end
+
+        hrp.CFrame = CFrame.new(
+            -982.162048,
+            58.6572495,
+            -4985.2417,
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
+        )
+    end
+})
+
+ChristmasSection:Toggle({
+    Title = "Auto Yeti",
+    Default = false,
+    Callback = function(state)
+        AutoBossEnabled = state
+
+        if state then
+            startBoss()
+        else
+            stopBoss()
+        end
+    end
+})
+
 local GozuTab = Window:CreateTab({
     Title = "Gozu & Mezu Stage",
     Icon = "chess-knight"
