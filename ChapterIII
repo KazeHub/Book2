@@ -1021,8 +1021,8 @@ local function startBoss()
     end)
 end
 
-local ChristmasSection = Game:SectionUI({
-    Title = "Christmas Event",
+local ChristmasSection = GameTab:SectionUI({
+    Title = "Xmas Event",
     Open = false
 })
 
