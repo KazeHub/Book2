@@ -638,6 +638,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 local AutoBossEnabled = false
+local AtAmmo = false
 local BossTween = nil
 local BossFollowConnection = nil
 local BossFireTask = nil
@@ -689,7 +690,6 @@ end
 local function getShotgun()
     local character = getCharacter()
     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-
     local shotgun = character:FindFirstChild("Shotgun")
 
     if shotgun then
@@ -876,6 +876,13 @@ local function fireAmmoPrompt(prompt)
     return true
 end
 
+local function stopBossTween()
+    if BossTween then
+        BossTween:Cancel()
+        BossTween = nil
+    end
+end
+
 local function collectAmmo()
     local hrp = getHRP()
 
@@ -883,44 +890,66 @@ local function collectAmmo()
         return false
     end
 
+    -- Completely disable boss movement
+    AtAmmo = true
+    stopBossTween()
+
+    -- Make sure no boss tween is running
+    task.wait(0.3)
+
+    if not AutoBossEnabled then
+        AtAmmo = false
+        return false
+    end
+
     local object, prompt = findAmmoObject()
 
     if not object or not prompt then
+        AtAmmo = false
         return false
     end
 
     local part = getObjectPart(object)
 
     if not part then
+        AtAmmo = false
         return false
     end
 
+    -- Teleport directly to ammo
     hrp.CFrame = part.CFrame + Vector3.new(0, 2, 0)
 
-    task.wait(0.2)
+    task.wait(0.3)
 
-    fireAmmoPrompt(prompt)
-
-    task.wait(0.4)
-
-    if isAmmoZeroZero() then
+    -- Stay completely away from Chenoo while collecting
+    while AutoBossEnabled and isAmmoZeroZero() do
         fireAmmoPrompt(prompt)
-        task.wait(0.4)
+        task.wait(0.3)
     end
+
+    if not AutoBossEnabled then
+        AtAmmo = false
+        return false
+    end
+
+    -- Keep away from Chenoo for another 0.3 seconds
+    task.wait(0.3)
+
+    -- Now allow boss following again
+    AtAmmo = false
 
     return not isAmmoZeroZero()
 end
 
 local function stopBoss()
+    AtAmmo = false
+
     if BossFollowConnection then
         BossFollowConnection:Disconnect()
         BossFollowConnection = nil
     end
 
-    if BossTween then
-        BossTween:Cancel()
-        BossTween = nil
-    end
+    stopBossTween()
 
     BossFireTask = nil
 end
@@ -944,7 +973,7 @@ local function startBoss()
     hrp.CFrame = firstCFrame
 
     BossFollowConnection = RunService.Heartbeat:Connect(function()
-        if not AutoBossEnabled then
+        if not AutoBossEnabled or AtAmmo then
             return
         end
 
@@ -1000,7 +1029,7 @@ local function startBoss()
 
             if ammo == 0 and maximum == 0 then
                 collectAmmo()
-                task.wait(0.2)
+                task.wait()
                 continue
             end
 
@@ -1010,7 +1039,7 @@ local function startBoss()
                 continue
             end
 
-            if os.clock() - lastFire >= FIRE_DELAY then
+            if not AtAmmo and os.clock() - lastFire >= FIRE_DELAY then
                 if fireShotgun() then
                     lastFire = os.clock()
                 end
