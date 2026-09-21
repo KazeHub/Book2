@@ -86,11 +86,12 @@ Player:Toggle({
         
         if FB_ENABLED then
             local function applyBright()
-                Lighting.Ambient = Color3.fromRGB(178, 178, 178)
-                Lighting.OutdoorAmbient = Color3.fromRGB(178, 178, 178)
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 14
-                Lighting.GlobalShadows = false
+                local a = Color3.fromRGB(178, 178, 178)
+                if Lighting.Ambient ~= a then Lighting.Ambient = a end
+                if Lighting.OutdoorAmbient ~= a then Lighting.OutdoorAmbient = a end
+                if Lighting.Brightness ~= 2 then Lighting.Brightness = 2 end
+                if Lighting.ClockTime ~= 14 then Lighting.ClockTime = 14 end
+                if Lighting.GlobalShadows ~= false then Lighting.GlobalShadows = false end
             end
             
             applyBright()
@@ -109,6 +110,44 @@ local RunService = clonenav or (cloneref and cloneref(game:GetService("RunServic
 local Players = clonenav or (cloneref and cloneref(game:GetService("Players"))) or game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+
+local CachedCharacter = LocalPlayer.Character
+local CachedHumanoid = CachedCharacter and CachedCharacter:FindFirstChildOfClass("Humanoid")
+local CachedHRP = CachedCharacter and CachedCharacter:FindFirstChild("HumanoidRootPart")
+local CachedNoclipParts = {}
+
+local function rebuildNoclipParts(char)
+	CachedNoclipParts = {}
+	if not char then return end
+	for _, p in ipairs(char:GetChildren()) do
+		if p:IsA("BasePart") then
+			CachedNoclipParts[#CachedNoclipParts + 1] = p
+		elseif p:IsA("Accessory") then
+			local h = p:FindFirstChild("Handle")
+			if h and h:IsA("BasePart") then
+				CachedNoclipParts[#CachedNoclipParts + 1] = h
+			end
+		end
+	end
+end
+rebuildNoclipParts(CachedCharacter)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+	CachedCharacter = char
+	CachedHumanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
+	CachedHRP = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 5)
+	task.defer(function()
+		task.wait(0.15)
+		rebuildNoclipParts(char)
+	end)
+end)
+LocalPlayer.CharacterRemoving:Connect(function()
+	CachedCharacter = nil
+	CachedHumanoid = nil
+	CachedHRP = nil
+	CachedNoclipParts = {}
+end)
+
 local NoclipEnabled = false
 local noclipConnection
 
@@ -124,19 +163,24 @@ Player:Toggle({
         end
         
         if NoclipEnabled then
+            if #CachedNoclipParts == 0 and CachedCharacter then
+                rebuildNoclipParts(CachedCharacter)
+            end
             noclipConnection = RunService.Stepped:Connect(function()
-                local character = LocalPlayer.Character
-                if character then
-                    for _, part in ipairs(character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            if part.CanCollide then part.CanCollide = false end
-                        end
+                for i = 1, #CachedNoclipParts do
+                    local part = CachedNoclipParts[i]
+                    if part and part.Parent and part.CanCollide then
+                        part.CanCollide = false
                     end
                 end
             end)
         end
     end
 })
+
+local TPWalkSpeed = 1
+local TPWalkEnabled = false
+local tpWalkConnection = nil
 
 Player:Slider({
     Title = "TP Walk Speed",
@@ -161,14 +205,18 @@ Player:Toggle({
 
         if TPWalkEnabled then
             tpWalkConnection = RunService.Heartbeat:Connect(function(dt)
-                local character = LocalPlayer.Character
-                if character then
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character:FindFirstChildOfClass("Humanoid")
-                    
-                    if hrp and humanoid and humanoid.MoveDirection.Magnitude > 0 then
-                        hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * (TPWalkSpeed * 0.05))
-                    end
+                local hrp = CachedHRP
+                local humanoid = CachedHumanoid
+                if not hrp or not hrp.Parent then
+                    local character = LocalPlayer.Character
+                    if not character then return end
+                    hrp = character:FindFirstChild("HumanoidRootPart")
+                    humanoid = character:FindFirstChildOfClass("Humanoid")
+                    CachedHRP = hrp
+                    CachedHumanoid = humanoid
+                end
+                if hrp and humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                    hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * (TPWalkSpeed * 0.05))
                 end
             end)
         end
@@ -224,11 +272,16 @@ Player:Toggle({
             local camera = Workspace.CurrentCamera
             
             flyConnection = RunService.RenderStepped:Connect(function(dt)
-                local character = LocalPlayer.Character
-                local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                
-                if hrp and humanoid then
+                local hrp = CachedHRP
+                local humanoid = CachedHumanoid
+                if not hrp or not hrp.Parent then
+                    local character = LocalPlayer.Character
+                    hrp = character and character:FindFirstChild("HumanoidRootPart")
+                    humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    CachedHRP = hrp
+                    CachedHumanoid = humanoid
+                end
+if hrp and humanoid then
                     local moveDir = humanoid.MoveDirection
                     
                     if moveDir.Magnitude > 0 then
@@ -314,8 +367,11 @@ GameTab:Toggle({
 
 -- Helper Functions
 local function getCharacterRoot()
+	if CachedHRP and CachedHRP.Parent then return CachedHRP end
 	local char = LocalPlayer.Character
-	return char and char:FindFirstChild("HumanoidRootPart")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	CachedHRP = hrp
+	return hrp
 end
 
 local function getYenFolder()
@@ -478,9 +534,12 @@ local function startYenEsp()
 		end)
 	end
 
+	local yenLastUpdate = 0
 	yenEspConnection = RunService.Heartbeat:Connect(function()
 		if not isEspToggled then return end
-
+		local now = tick()
+		if now - yenLastUpdate < 0.2 then return end
+		yenLastUpdate = now
 		local rootPart = getCharacterRoot()
 		for item, data in pairs(yenEspHolders) do
 			if item and item.Parent and data.Part and data.Part.Parent and data.TextLabel then
