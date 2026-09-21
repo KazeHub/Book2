@@ -4,7 +4,7 @@ local KazeUI = KazeUI or loadstring(game:HttpGet(
 
 local Window = KazeUI:CreateWindow({
     Title = "THE MIMIC",
-    Author = "KAZE",
+    Author = "KAZS",
     Version = "BOOK II",
     Size = UDim2.fromOffset(500, 370),
     Icon = "79414074886215",
@@ -203,7 +203,7 @@ Player:Toggle({
         end
 
         if TPWalkEnabled then
-            tpWalkConnection = RunService.Heartbeat:Connect(function(dt)
+            tpWalkConnection = RunService.RenderStepped:Connect(function(dt)
                 local hrp = CachedHRP
                 local humanoid = CachedHumanoid
                 if not hrp or not hrp.Parent then
@@ -505,7 +505,6 @@ local function startYenEsp()
 	local yenLastUpdate = 0
 	yenEspConnection = RunService.Heartbeat:Connect(function()
 		if not isEspToggled then return end
-
 		local now = tick()
 		if now - yenLastUpdate < 0.2 then return end
 		yenLastUpdate = now
@@ -597,7 +596,7 @@ GameTab:Toggle({
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                     end)
                 end
-                task.wait(0.05)
+                RunService.RenderStepped:Wait()
             end
         end)
     end
@@ -725,13 +724,11 @@ local function createESP(model)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = game:GetService("RunService").Heartbeat:Connect(function()
-        if not espEnabled or not model or not model.Parent then
-            pcall(function()
-                if billboard then billboard:Destroy() end
-                if highlight then highlight:Destroy() end
-            end)
-            if conn then conn:Disconnect() end
+    local conn = game:GetService("RunService").RenderStepped:Connect(function()
+        if not espEnabled or not model.Parent then
+            billboard:Destroy()
+            highlight:Destroy()
+            conn:Disconnect()
             return
         end
         local char = LocalPlayer.Character
@@ -1281,13 +1278,11 @@ local function createESP(model, name)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = game:GetService("RunService").Heartbeat:Connect(function()
-        if not espEnabled or not model or not model.Parent then
-            pcall(function()
-                if billboard then billboard:Destroy() end
-                if highlight then highlight:Destroy() end
-            end)
-            if conn then conn:Disconnect() end
+    local conn = game:GetService("RunService").RenderStepped:Connect(function()
+        if not espEnabled or not model.Parent then
+            if billboard then billboard:Destroy() end
+            if highlight then highlight:Destroy() end
+            conn:Disconnect()
             return
         end
         local char = LocalPlayer.Character
@@ -1353,7 +1348,7 @@ MallChase:Button({
             return numA < numB
         end)
 
-        local tweenSpeed = 2
+        local tweenSpeed = 1
 
         -- Tween from waypoint 2 to 20
         for i = 2, #waypoints do
@@ -1900,13 +1895,11 @@ local function createESP(model, name)
     text.Font = Enum.Font.SourceSansBold
     text.Parent = billboard
 
-    local conn = game:GetService("RunService").Heartbeat:Connect(function()
-        if not espEnabled or not model or not model.Parent then
-            pcall(function()
-                if billboard then billboard:Destroy() end
-                if highlight then highlight:Destroy() end
-            end)
-            if conn then conn:Disconnect() end
+    local conn = game:GetService("RunService").RenderStepped:Connect(function()
+        if not espEnabled or not model.Parent then
+            if billboard then billboard:Destroy() end
+            if highlight then highlight:Destroy() end
+            conn:Disconnect()
             return
         end
         local char = LocalPlayer.Character
