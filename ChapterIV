@@ -9,8 +9,8 @@ local Window = KazeUI:CreateWindow({
     Size = UDim2.fromOffset(500, 370),
     Icon = "79414074886215",
     Theme = "Obsidian",
-    GlowStyle = "Cycle",
-    GlowColor = true,
+    GlowStyle = "None",
+    GlowColor = false,
     
     PopupTitle = "Welcome to Kaze Hub!",
     PopupContent = "Thank you for using my script! if you found any bug, please report it to the discord.",
@@ -48,11 +48,13 @@ Player:Toggle({
         end
         
         if InstantPromptEnabled then
-            for _, prompt in ipairs(Workspace:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") then
-                    prompt.HoldDuration = 0
+            task.defer(function()
+                for _, prompt in ipairs(Workspace:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") then
+                        prompt.HoldDuration = 0
+                    end
                 end
-            end
+            end)
             
             promptConnection = Workspace.DescendantAdded:Connect(function(descendant)
                 if descendant:IsA("ProximityPrompt") then
@@ -94,7 +96,7 @@ Player:Toggle({
             end
             
             applyBright()
-            fbConnection = Lighting.Changed:Connect(applyBright)
+            fbConnection = Lighting:GetPropertyChangedSignal("Ambient"):Connect(applyBright)
         else
             Lighting.Ambient = origAmbient
             Lighting.OutdoorAmbient = origOutdoorAmbient
