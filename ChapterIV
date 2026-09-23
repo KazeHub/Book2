@@ -4,7 +4,7 @@ local KazeUI = KazeUI or loadstring(game:HttpGet(
 
 local Window = KazeUI:CreateWindow({
     Title = "THE MIMIC",
-    Author = "KAZS",
+    Author = "KAZE",
     Version = "BOOK II",
     Size = UDim2.fromOffset(500, 370),
     Icon = "79414074886215",
