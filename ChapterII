@@ -9,8 +9,8 @@ local Window = KazeUI:CreateWindow({
     Size = UDim2.fromOffset(500, 370),
     Icon = "79414074886215",
     Theme = "Obsidian",
-    GlowStyle = "Sequence",
-    GlowColor = true,
+    GlowStyle = "None",
+    GlowColor = false,
     
     PopupTitle = "Welcome to Kaze Hub!",
     PopupContent = "Thank you for using my script! if you found any bug, please report it to the discord.",
@@ -48,11 +48,13 @@ Player:Toggle({
         end
         
         if InstantPromptEnabled then
-            for _, prompt in ipairs(Workspace:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") then
-                    prompt.HoldDuration = 0
+            task.defer(function()
+                for _, prompt in ipairs(Workspace:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") then
+                        prompt.HoldDuration = 0
+                    end
                 end
-            end
+            end)
             
             promptConnection = Workspace.DescendantAdded:Connect(function(descendant)
                 if descendant:IsA("ProximityPrompt") then
@@ -95,7 +97,7 @@ Player:Toggle({
             end
             
             applyBright()
-            fbConnection = Lighting.Changed:Connect(applyBright)
+            fbConnection = Lighting:GetPropertyChangedSignal("Ambient"):Connect(applyBright)
         else
             Lighting.Ambient = origAmbient
             Lighting.OutdoorAmbient = origOutdoorAmbient
@@ -682,7 +684,7 @@ OceanTab:Button({
                 flyConnection = nil
             end
             
-            for _, v in ipairs(character:GetDescendants()) do
+            for _, part in ipairs(CachedNoclipParts or {}) do
                 if v:IsA("BasePart") then
                     v.CanCollide = false
                 end
@@ -734,7 +736,7 @@ OceanTab:Button({
                 flyConnection = nil
             end
             
-            for _, v in ipairs(character:GetDescendants()) do
+            for _, part in ipairs(CachedNoclipParts or {}) do
                 if v:IsA("BasePart") then
                     v.CanCollide = false
                 end
@@ -813,7 +815,7 @@ end
 local function setNoclip(state)
     local char = getChar()
     if char then
-        for _,part in ipairs(char:GetDescendants()) do
+        for _, part in ipairs(CachedNoclipParts or {}) do
             if part:IsA("BasePart") then
                 part.CanCollide = not state
             end
