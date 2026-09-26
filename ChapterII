@@ -638,6 +638,80 @@ GameTab:Toggle({
     end
 })
 
+GameTab:Button({
+    Title = "Collect Yen",
+    Callback = function()
+        if not isEspToggled then return end
+
+        local rootPart = getCharacterRoot()
+        if not rootPart then return end
+
+        local originalCFrame = rootPart.CFrame
+        local collecting = true
+        local collected = {}
+
+        task.spawn(function()
+            while collecting do
+                local foundCoin = false
+
+                for item, data in pairs(yenEspHolders) do
+                    if not isEspToggled then
+                        collecting = false
+                        break
+                    end
+
+                    if item and item.Parent and data and data.Part and data.Part.Parent and not collected[item] then
+                        foundCoin = true
+                        collected[item] = true
+
+                        rootPart = getCharacterRoot()
+                        if not rootPart then
+                            collecting = false
+                            break
+                        end
+
+                        rootPart.CFrame = data.Part.CFrame + Vector3.new(0, 2, 0)
+                        task.wait(0.2)
+
+                        local prompt = item:FindFirstChildOfClass("ProximityPrompt")
+                            or item:FindFirstChild("ProximityPrompt", true)
+
+                        if prompt then
+                            pcall(function()
+                                prompt.HoldDuration = 0
+                                fireproximityprompt(prompt, 0)
+                            end)
+                        end
+
+                        task.wait(0.1)
+                    end
+                end
+
+                if not foundCoin then
+                    task.wait(0.25)
+
+                    for item in pairs(yenEspHolders) do
+                        if item and item.Parent and not collected[item] then
+                            foundCoin = true
+                            break
+                        end
+                    end
+
+                    if not foundCoin then
+                        collecting = false
+                    end
+                end
+
+                task.wait(0.05)
+            end
+
+            rootPart = getCharacterRoot()
+            if rootPart then
+                rootPart.CFrame = originalCFrame
+            end
+        end)
+    end
+})
 
 -- ==========================================
 -- 2. NEW TAB: OCEAN AUTOMATION
