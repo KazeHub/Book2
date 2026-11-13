@@ -374,7 +374,7 @@ local function getCharacterRoot()
     return char and char:FindFirstChild("HumanoidRootPart")
 end
 
-GameMain:Button({
+GameYen:Button({
     Title = "Yen Collect",
     Callback = function()
         task.spawn(function()
@@ -2449,16 +2449,12 @@ TempleMain:Button({
 
 local TempleESP = TempleTab:CreateSubTab({ Title = "ESP", Icon = "eye" })
 
--- ==========================================
--- ESP PAINT STATIONS (Green)
--- ==========================================
 local espStationsEnabled = false
 local stationHighlights = {}
 
 local function applyStationESP(obj)
     if not obj or stationHighlights[obj] or not espStationsEnabled then return end
     local hl = Instance.new("Highlight")
-    hl.Name = "StationESP"
     hl.Adornee = obj
     hl.FillColor = Color3.fromRGB(0, 255, 0)
     hl.OutlineColor = Color3.fromRGB(0, 255, 0)
@@ -2475,7 +2471,7 @@ local function clearStationESP()
 end
 
 TempleESP:Toggle({
-    Title = "ESP Paint Stations",
+    Title = "Paint Stations",
     Default = false,
     Callback = function(state)
         espStationsEnabled = state
@@ -2500,34 +2496,27 @@ TempleESP:Toggle({
     end
 })
 
--- ==========================================
--- ESP INGREDIENTS (Optimized for 0 Lag)
--- ==========================================
 local espIngredientsEnabled = false
 local ingredientHighlights = {}
 local ingredientConnection = nil
 
 local function applyIngredientESP(obj)
-    -- 1. Check if it's valid and not already highlighted
     if not obj or ingredientHighlights[obj] or not espIngredientsEnabled then return end
     if not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
 
-    -- 2. Determine color based on name
     local color = nil
     local name = obj.Name
     
     if name:find("Orchid") then
-        color = Color3.fromRGB(0, 255, 0) -- Green
+        color = Color3.fromRGB(255, 255, 0)
     elseif name:find("Water") then
-        color = Color3.fromRGB(0, 255, 255) -- Cyan
+        color = Color3.fromRGB(0, 0, 255)
     elseif name:find("PlaceInkHere") then
-        color = Color3.fromRGB(255, 255, 0) -- Yellow
+        color = Color3.fromRGB(170, 0, 255)
     end
 
-    -- 3. If it matches a valid name, apply the highlight
     if color then
         local hl = Instance.new("Highlight")
-        hl.Name = "IngredientESP"
         hl.Adornee = obj
         hl.FillColor = color
         hl.OutlineColor = color
@@ -2551,7 +2540,7 @@ local function clearIngredientESP()
 end
 
 TempleESP:Toggle({
-    Title = "ESP Ingredients",
+    Title = "Ingredients",
     Default = false,
     Callback = function(state)
         espIngredientsEnabled = state
@@ -2559,18 +2548,15 @@ TempleESP:Toggle({
         
         if not espIngredientsEnabled then return end
         
-        -- Run in a background task to prevent frame drops
         task.spawn(function()
             local paintPuzzle = workspace:FindFirstChild("Section3") and workspace.Section3:FindFirstChild("PaintPuzzle")
             local ingredients = paintPuzzle and paintPuzzle:FindFirstChild("Ingredients")
             if not ingredients then return end
             
-            -- 1. Highlight all existing objects in the folder ONCE
             for _, obj in ipairs(ingredients:GetChildren()) do
                 applyIngredientESP(obj)
             end
             
-            -- 2. If the game adds a new ingredient, instantly highlight it without a loop
             ingredientConnection = ingredients.ChildAdded:Connect(function(obj)
                 if espIngredientsEnabled then
                     applyIngredientESP(obj)
@@ -2580,9 +2566,6 @@ TempleESP:Toggle({
     end
 })
 
--- ==========================================
--- MONSTER SECTION
--- ==========================================
 TempleESP:Section("Monster")
 
 local espMonsterEnabled = false
@@ -2591,11 +2574,10 @@ local monsterBillboards = {}
 local monsterConnections = {}
 
 local function applyMonsterESP(obj)
-    if not obj or monsterHighlights[obj] or not espMonsterEnabled then return end
-    if not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
+    if not obj or obj.Name ~= "Senzai" or monsterHighlights[obj] or not espMonsterEnabled then return end
+    if not obj:IsA("Model") then return end
 
     local hl = Instance.new("Highlight")
-    hl.Name = "MonsterESP"
     hl.Adornee = obj
     hl.FillColor = Color3.fromRGB(255, 0, 0)
     hl.OutlineColor = Color3.fromRGB(0, 0, 0)
@@ -2606,7 +2588,6 @@ local function applyMonsterESP(obj)
     monsterHighlights[obj] = hl
 
     local bb = Instance.new("BillboardGui")
-    bb.Name = "MonsterName"
     bb.Size = UDim2.new(0, 200, 0, 50)
     bb.StudsOffset = Vector3.new(0, 3, 0)
     bb.AlwaysOnTop = true
@@ -2637,15 +2618,19 @@ end
 local function setupMonsterFolder(folder)
     if not folder then return end
     for _, child in ipairs(folder:GetChildren()) do
-        applyMonsterESP(child)
+        if child.Name == "Senzai" then
+            applyMonsterESP(child)
+        end
     end
     table.insert(monsterConnections, folder.ChildAdded:Connect(function(inst)
-        if espMonsterEnabled then applyMonsterESP(inst) end
+        if espMonsterEnabled and inst.Name == "Senzai" then 
+            applyMonsterESP(inst) 
+        end
     end))
 end
 
 TempleESP:Toggle({
-    Title = "ESP Monsters",
+    Title = "Senzai",
     Default = false,
     Callback = function(state)
         espMonsterEnabled = state
@@ -2664,7 +2649,11 @@ TempleESP:Toggle({
 
 local StreetTokyoTab = Window:CreateTab({ Title = "StreetTokyo", Icon = "building" })
 local StreetTokyoMain = StreetTokyoTab:CreateSubTab({ Title = "Main", Icon = "gamepad-2", Default = true })
+local StreetTokyoESP = StreetTokyoTab:CreateSubTab({ Title = "ESP", Icon = "eye" })
 
+-- ==========================================
+-- 1. RESCUE SURVIVOR
+-- ==========================================
 StreetTokyoMain:Button({
     Title = "Rescue Survivor",
     Callback = function()
@@ -2679,7 +2668,6 @@ StreetTokyoMain:Button({
             local npcFolder = rescue and rescue:FindFirstChild("NPCs")
             if not npcFolder then return end
 
-            -- 1. Gather the first 3 "pose" models
             local poses = {}
             for _, obj in ipairs(npcFolder:GetChildren()) do
                 if #poses >= 3 then break end
@@ -2688,7 +2676,6 @@ StreetTokyoMain:Button({
                 end
             end
 
-            -- 2. Function to find the main part
             local function getPrimaryPart(model)
                 if not model then return nil end
                 if model:IsA("Model") then
@@ -2699,7 +2686,6 @@ StreetTokyoMain:Button({
                 return nil
             end
 
-            -- 3. Teleport to each pose and fire its prompt
             for _, pose in ipairs(poses) do
                 local targetPart = getPrimaryPart(pose)
                 if targetPart then
@@ -2708,7 +2694,6 @@ StreetTokyoMain:Button({
                     Character:PivotTo(targetPart.CFrame + Vector3.new(0, 3, 0))
                     task.wait(0.2)
                     
-                    -- Fast prompt search
                     local prompt = pose:FindFirstChildWhichIsA("ProximityPrompt", true)
                     if prompt and prompt.Enabled then
                         prompt.HoldDuration = 0
@@ -2727,7 +2712,6 @@ StreetTokyoMain:Button({
                 end
             end
 
-            -- 4. Teleport to RescuePoint
             local rescuePoint = rescue and rescue:FindFirstChild("RescuePoint")
             if rescuePoint and rescuePoint:IsA("BasePart") then
                 HRP.AssemblyLinearVelocity = Vector3.zero
@@ -2738,474 +2722,495 @@ StreetTokyoMain:Button({
     end
 })
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
+-- ==========================================
+-- 2. AUTO ENZUKAI (SECTION 4 PLANE)
+-- ==========================================
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local Workspace = game:GetService("Workspace")
+    local LocalPlayer = Players.LocalPlayer
 
-local isToggled = false
-local mainTask = nil
-local floatConnection = nil
-local currentHoverCFrame = nil
-local activeTween = nil
-local isFlightActive = false
-local noclipConnection = nil
+    local isToggled = false
+    local mainTask = nil
+    local floatConnection = nil
+    local currentHoverCFrame = nil
+    local isFlightActive = false
+    local noclipConnection = nil
 
-local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
-    if not targetPart then return Vector3.new(0, 1, 0) end
-    local originPart = bow and (bow:FindFirstChild("Handle") or bow:FindFirstChild("Muzzle"))
-    local originPos = originPart and originPart.Position or (fallbackRoot and fallbackRoot.Position)
-    if not originPos then return Vector3.new(0, 1, 0) end
+    local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
+        if not targetPart or not targetPart.Parent then return Vector3.new(0, 1, 0) end
+        local originPart = bow and (bow:FindFirstChild("Handle") or bow:FindFirstChild("Muzzle"))
+        local originPos = originPart and originPart.Position or (fallbackRoot and fallbackRoot.Position)
+        if not originPos then return Vector3.new(0, 1, 0) end
 
-    local targetPos = targetPart.Position
-    local speed = arrowSpeed or 300
-    local distance = (targetPos - originPos).Magnitude
-    local flightTime = distance / speed
-    local gravity = Workspace.Gravity
-    
-    local dropCompensation = Vector3.new(0, 0.5 * gravity * (flightTime ^ 2), 0)
-    local adjustedTarget = targetPos + dropCompensation
+        local speed = arrowSpeed or 300
+        local targetPos = targetPart.Position
+        local velocity = targetPart:IsA("BasePart") and targetPart.AssemblyLinearVelocity or Vector3.zero
+        local distance = (targetPos - originPos).Magnitude
+        local flightTime = distance / speed
 
-    local camera = Workspace.CurrentCamera
-    if camera then
-        camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPos)
+        local predicted = targetPos + velocity * flightTime
+        local gravity = Workspace.Gravity
+        local compensated = predicted + Vector3.new(0, 0.5 * gravity * flightTime ^ 2, 0)
+        
+        if Workspace.CurrentCamera then
+            Workspace.CurrentCamera.CFrame = CFrame.lookAt(Workspace.CurrentCamera.CFrame.Position, compensated)
+        end
+        
+        return (compensated - originPos).Unit
     end
 
-    return (adjustedTarget - originPos).Unit
-end
-
-local function enableFloat(rootPart)
-    if floatConnection then return end
-    floatConnection = RunService.PreRender:Connect(function()
-        if isToggled and rootPart and rootPart.Parent then
-            rootPart.AssemblyLinearVelocity = Vector3.zero
-            rootPart.AssemblyAngularVelocity = Vector3.zero
-            if currentHoverCFrame and (not activeTween or activeTween.PlaybackState ~= Enum.PlaybackState.Playing) then
-                rootPart.CFrame = currentHoverCFrame
+    local function enableFloat(rootPart)
+        if floatConnection then return end
+        floatConnection = RunService.PreRender:Connect(function()
+            if isToggled and rootPart and rootPart.Parent then
+                rootPart.AssemblyLinearVelocity = Vector3.zero
+                rootPart.AssemblyAngularVelocity = Vector3.zero
+                if currentHoverCFrame then rootPart.CFrame = currentHoverCFrame end
             end
-        end
-    end)
-end
+        end)
+    end
 
-local function disableFloat()
-    if floatConnection then floatConnection:Disconnect() floatConnection = nil end
-    if activeTween then activeTween:Cancel() activeTween = nil end
-    currentHoverCFrame = nil
-end
+    local function disableFloat()
+        if floatConnection then floatConnection:Disconnect() floatConnection = nil end
+        currentHoverCFrame = nil
+    end
 
-local function enableNoclip()
-    if noclipConnection then return end
-    noclipConnection = RunService.Stepped:Connect(function()
-        local char = LocalPlayer.Character
-        if char then
-            for _, p in ipairs(char:GetDescendants()) do
-                if p:IsA("BasePart") and p.CanCollide then
-                    p.CanCollide = false
+    local function enableNoclip()
+        if noclipConnection then return end
+        noclipConnection = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, p in ipairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
                 end
             end
-        end
-    end)
-end
+        end)
+    end
 
-local function disableNoclip()
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-    local char = LocalPlayer.Character
-    if char then
-        for _, p in ipairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then
-                p.CanCollide = true
+    local function disableNoclip()
+        if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    end
+
+    -- More flexible find
+    local function findActiveWeakPoint()
+        local s4 = Workspace:FindFirstChild("Section4")
+        local folder = s4 and s4:FindFirstChild("WeakPoints") and s4.WeakPoints:FindFirstChild("Points")
+        if not folder then return nil end
+        
+        for _, model in ipairs(folder:GetChildren()) do
+            local icon = model:FindFirstChild("Icon") or model:FindFirstChild("Icon", true)
+            local billboard = icon and (icon:IsA("BillboardGui") and icon or icon:FindFirstChildWhichIsA("BillboardGui", true))
+            
+            if billboard and billboard.Enabled then
+                return model, billboard
+            end
+            task.wait(0.01)
+        end
+        return nil
+    end
+
+    local function getBoss()
+        local s4 = Workspace:FindFirstChild("Section4")
+        local boss = s4 and s4:FindFirstChild("BossMonster") and s4.BossMonster:FindFirstChild("EnzukaiRyu")
+        if not boss then return nil end
+        local plane = boss:FindFirstChild("Plane.009") or boss:FindFirstChild("Plane.015") or boss:FindFirstChild("Plane.014")
+        local hitbox = boss:FindFirstChild("Hitbox") or plane
+        local hitEvent = boss:FindFirstChild("HitEvent")
+        local hrp = boss:FindFirstChild("HumanoidRootPart")
+        return plane, hitbox, hitEvent, hrp and hrp:FindFirstChild("FlightSFX")
+    end
+
+    local function equipSpiritBow(character, humanoid)
+        local bowInChar = character:FindFirstChild("SpiritBow")
+        if bowInChar then return bowInChar end
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        local bowInBackpack = backpack and backpack:FindFirstChild("SpiritBow")
+        if bowInBackpack and humanoid then
+            humanoid:EquipTool(bowInBackpack)
+            task.wait(0.1)
+            return character:FindFirstChild("SpiritBow")
+        end
+        return nil
+    end
+
+    local function getClearShotPos(originCFrame, targetPart)
+        if not targetPart then return originCFrame.Position end
+        local rp = RaycastParams.new()
+        rp.FilterType = Enum.RaycastFilterType.Exclude
+        rp.FilterDescendantsInstances = { LocalPlayer.Character, Workspace.CurrentCamera }
+        rp.IgnoreWater = true
+        
+        local targetPos = targetPart.Position
+        local offsets = {
+            originCFrame * CFrame.new(0, 30, 25),
+            originCFrame * CFrame.new(25, 30, 0),
+            originCFrame * CFrame.new(-25, 30, 0),
+            originCFrame * CFrame.new(0, 30, -25),
+            originCFrame * CFrame.new(0, 45, 0)
+        }
+        
+        for _, testCF in ipairs(offsets) do
+            local hit = Workspace:Raycast(testCF.Position, targetPos - testCF.Position, rp)
+            if not hit or hit.Instance:IsDescendantOf(targetPart.Parent) then
+                return testCF.Position
             end
         end
-    end
-end
-
-local function findActiveWeakPoint()
-    local s4 = Workspace:FindFirstChild("Section4")
-    local folder = s4 and s4:FindFirstChild("WeakPoints") and s4.WeakPoints:FindFirstChild("Points")
-    if not folder then return nil end
-
-    for _, model in ipairs(folder:GetChildren()) do
-        local icon = model:FindFirstChild("Icon", true)
-        if icon and icon:IsA("BillboardGui") and icon.Enabled then
-            local img = icon:FindFirstChildOfClass("ImageLabel")
-            if img and img.Visible then return model, icon end
-        end
-    end
-    return nil
-end
-
-local function areMonstersNearby(pos, dist)
-    local s4 = Workspace:FindFirstChild("Section4")
-    if not s4 then return false end
-    local mons = {
-        s4:FindFirstChild("Monster2") and s4.Monster2:FindFirstChild("Rin2"),
-        s4:FindFirstChild("Monster3") and s4.Monster3:FindFirstChild("Tenome2"),
-        s4:FindFirstChild("Monster4") and s4.Monster4:FindFirstChild("Tsukiya2")
-    }
-    for _, m in ipairs(mons) do
-        if m then
-            local h = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChildWhichIsA("BasePart")
-            local hum = m:FindFirstChildOfClass("Humanoid")
-            if h and (not hum or hum.Health > 0) and (h.Position - pos).Magnitude <= (dist or 50) then return true end
-        end
-    end
-    return false
-end
-
-local function getBoss()
-    local s4 = Workspace:FindFirstChild("Section4")
-    local boss = s4 and s4:FindFirstChild("BossMonster") and s4.BossMonster:FindFirstChild("EnzukaiRyu")
-    if not boss then return nil end
-    local plane = boss:FindFirstChild("Plane.009") or boss:FindFirstChild("Plane.015") or boss:FindFirstChild("Plane.014")
-    local hitbox = boss:FindFirstChild("Hitbox") or plane
-    local hitEvent = boss:FindFirstChild("HitEvent")
-    local hrp = boss:FindFirstChild("HumanoidRootPart")
-    return plane, hitbox, hitEvent, hrp and hrp:FindFirstChild("FlightSFX")
-end
-
-local function equipSpiritBow(character, humanoid)
-    local bowInChar = character:FindFirstChild("SpiritBow")
-    if bowInChar then return bowInChar end
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    local bowInBackpack = backpack and backpack:FindFirstChild("SpiritBow")
-    if bowInBackpack and humanoid then
-        humanoid:EquipTool(bowInBackpack)
-        task.wait(0.1)
-        return character:FindFirstChild("SpiritBow")
-    end
-    return nil
-end
-
-local function runCombinedAutomation()
-    print("[Auto Enzukai] Loop started!")
-    
-    local hitConn = nil
-    local _, _, hitEvent = getBoss()
-    if hitEvent and hitEvent:IsA("RemoteEvent") then
-        hitConn = hitEvent.OnClientEvent:Connect(function() isFlightActive = true end)
+        return offsets[1].Position
     end
 
-    while isToggled do
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        
-        if not hrp or not hum then 
-            task.wait(0.5) 
-            continue 
+    local function runCombinedAutomation()
+        local hitConn = nil
+        local _, _, hitEvent = getBoss()
+        if hitEvent and hitEvent:IsA("RemoteEvent") then
+            hitConn = hitEvent.OnClientEvent:Connect(function() isFlightActive = true end)
         end
 
-        local model, icon = findActiveWeakPoint()
-        if model and icon then
-            print("[Auto Enzukai] Found Weak Point!")
-            if not areMonstersNearby(model:GetPivot().Position, 60) then
+        while isToggled do
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp or not hum then task.wait(0.5) continue end
+
+            -- FLIGHT PHASE
+            if isFlightActive then
+                disableFloat()
+                disableNoclip()
+                hrp.CFrame = CFrame.new(30, 126, -2868)
+                task.wait(1)
+                
+                local _, _, _, sfx = getBoss()
+                local flightStart = tick()
+                while isToggled and sfx and sfx.IsPlaying and (tick() - flightStart) < 15 do
+                    task.wait(0.5)
+                end
+                
+                isFlightActive = false
+                
+                -- WAIT FOR WEAK POINT TO APPEAR (prevents going to boss prematurely)
+                local waitStart = tick()
+                while isToggled and (tick() - waitStart) < 10 do
+                    if findActiveWeakPoint() then 
+                        task.wait(0.5)
+                        break 
+                    end
+                    task.wait(0.3)
+                end
+                continue
+            end
+
+            local model, icon = findActiveWeakPoint()
+            local plane, hitbox, _, sfx = getBoss()
+
+            if model and icon then
+                -- WEAK POINT PHASE
                 local bow = equipSpiritBow(char, hum)
                 if bow and bow:FindFirstChild("RemoteEvent") then
                     enableFloat(hrp)
-                    for _, name in ipairs({"EyeA", "EyeB", "EyeC", "EyeD", "EyeE"}) do
-                        local eye = model:FindFirstChild(name)
-                        if isToggled and eye and eye:IsA("BasePart") then
-                            while isToggled and eye.Transparency == 0 and icon.Enabled do
-                                currentHoverCFrame = CFrame.lookAt((eye.CFrame * CFrame.new(0, 30, 25)).Position, eye.Position)
+                    local shotSomething = false
+                    for _, name in ipairs({"EyeA", "EyeB", "EyeC", "EyeD", "EyeE", "HitboxA", "HitboxB", "HitboxC", "HitboxD", "HitboxE"}) do
+                        local eye = model:FindFirstChild(name, true)
+                        if isToggled and eye and eye:IsA("BasePart") and eye.Transparency < 1 then
+                            shotSomething = true
+                            while isToggled and eye.Transparency < 1 and icon.Enabled do
+                                local shotPos = getClearShotPos(eye.CFrame, eye)
+                                currentHoverCFrame = CFrame.lookAt(shotPos, eye.Position)
                                 hrp.CFrame = currentHoverCFrame
-
-                                bow.RemoteEvent:FireServer(0, true)
-                                task.wait(1.5)
-
+                                
+                                pcall(function() bow.RemoteEvent:FireServer(0, true) end)
+                                task.wait(0.8)
                                 if eye and eye.Parent then
-                                    bow.RemoteEvent:FireServer(0, false, getPerfectAimDirection(bow, eye, hrp, 300))
+                                    pcall(function() bow.RemoteEvent:FireServer(0, false, getPerfectAimDirection(bow, eye, hrp, 300)) end)
                                 end
                                 task.wait(0.2)
                             end
                         end
                     end
+                    if not shotSomething then
+                        task.wait(0.5)
+                    end
+                end
+            elseif hitbox and hitbox:IsA("BasePart") and not isFlightActive then
+                -- BOSS PHASE
+                local bow = equipSpiritBow(char, hum)
+                if bow and bow:FindFirstChild("RemoteEvent") then
+                    enableFloat(hrp)
+                    enableNoclip() 
+                    while isToggled and not isFlightActive do
+                        -- BREAK if weak point appeared (prioritize weak point)
+                        if findActiveWeakPoint() then break end
+                        
+                        local cp, ch, _, cs = getBoss()
+                        if cs and cs:IsA("Sound") and cs.IsPlaying then isFlightActive = true break end
+                        if not cp then break end
+
+                        local targetPart = ch or cp
+                        local shotPos = cp.Position - Vector3.new(0, 40, 0)
+                        
+                        currentHoverCFrame = CFrame.lookAt(shotPos, targetPart.Position)
+                        hrp.CFrame = currentHoverCFrame
+                        
+                        pcall(function() bow.RemoteEvent:FireServer(0, true) end)
+                        task.wait(0.8) 
+
+                        if cp and cp:IsA("BasePart") and ch then
+                            local newShotPos = cp.Position - Vector3.new(0, 40, 0)
+                            currentHoverCFrame = CFrame.lookAt(newShotPos, ch.Position)
+                            hrp.CFrame = currentHoverCFrame
+                        end
+                        
+                        if cs and cs:IsA("Sound") and cs.IsPlaying then isFlightActive = true break end
+
+                        if not isToggled or isFlightActive then break end
+                        if ch then 
+                            pcall(function() bow.RemoteEvent:FireServer(0, false, getPerfectAimDirection(bow, ch, hrp, 300)) end) 
+                        end
+                        task.wait(0.2)
+                    end
+                    disableNoclip()
                 end
             else
-                task.wait(1)
+                disableFloat()
+                task.wait(1) 
             end
         end
 
-        isFlightActive = false
-        local plane, hitbox, _, sfx = getBoss()
-        
-        if plane and plane:IsA("BasePart") and not areMonstersNearby(plane.Position, 80) then
-            print("[Auto Enzukai] Found Boss!")
-            local bow = equipSpiritBow(char, hum)
-            if bow and bow:FindFirstChild("RemoteEvent") then
-                enableFloat(hrp)
-                
-                enableNoclip() 
-                
-                while isToggled and not isFlightActive do
-                    local cp, ch, _, cs = getBoss()
-                    if cs and cs:IsA("Sound") and cs.IsPlaying then isFlightActive = true break end
-                    if not cp then break end
+        if hitConn then hitConn:Disconnect() end
+        disableFloat()
+        disableNoclip()
+    end
 
-                    local tPos = (ch or cp).Position
-                    -- 40 STUDS UNDER
-                    local under = cp.Position - Vector3.new(0, 40, 0)
-                    currentHoverCFrame = CFrame.lookAt(under, tPos)
-                    hrp.CFrame = currentHoverCFrame
-                    
-                    bow.RemoteEvent:FireServer(0, true)
-
-                    local el = 0
-                    while el < 1.5 and isToggled and not isFlightActive do
-                        task.wait(0.05)
-                        el += 0.05
-                        if cp and cp:IsA("BasePart") and ch then
-                            local updUnder = cp.Position - Vector3.new(0, 40, 0)
-                            currentHoverCFrame = CFrame.lookAt(updUnder, ch.Position)
-                            hrp.CFrame = currentHoverCFrame
-                        end
-                        if cs and cs:IsA("Sound") and cs.IsPlaying then isFlightActive = true break end
-                    end
-
-                    if not isToggled or isFlightActive then break end
-                    if ch then bow.RemoteEvent:FireServer(0, false, getPerfectAimDirection(bow, ch, hrp, 300)) end
-                    task.wait(0.2)
-                end
-                
+    StreetTokyoMain:Toggle({
+        Title = "Auto Enzukai",
+        Default = false,
+        Callback = function(state)
+            isToggled = state
+            isFlightActive = false
+            if isToggled then
+                if mainTask then task.cancel(mainTask) end
+                mainTask = task.spawn(function()
+                    local ok, err = pcall(runCombinedAutomation)
+                    if not ok then warn("[Auto Enzukai] Error:", err) end
+                end)
+            else
+                disableFloat()
                 disableNoclip()
+                if mainTask then task.cancel(mainTask) mainTask = nil end
             end
+        end
+    })
+end
+
+-- ==========================================
+-- 3. AUTO 3 MONSTERS (Fixed: Teleport to prompt)
+-- ==========================================
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local Workspace = game:GetService("Workspace")
+    local LocalPlayer = Players.LocalPlayer
+
+    local isToggled = false
+    local mainTask = nil
+    local floatConnection = nil
+    local noclipConnection = nil
+    local currentHoverCFrame = nil
+
+    local function getPerfectAimDirection(bow, targetPart, fallbackRoot, arrowSpeed)
+        if not targetPart or not targetPart.Parent then return Vector3.new(0, 1, 0) end
+        local originPart = bow and (bow:FindFirstChild("Handle") or bow:FindFirstChild("Muzzle"))
+        local originPos = originPart and originPart.Position or (fallbackRoot and fallbackRoot.Position)
+        if not originPos then return Vector3.new(0, 1, 0) end
+
+        local speed = arrowSpeed or 300
+        local targetPos = targetPart.Position
+        local velocity = targetPart:IsA("BasePart") and targetPart.AssemblyLinearVelocity or Vector3.zero
+        local distance = (targetPos - originPos).Magnitude
+        local flightTime = distance / speed
+
+        local predicted = targetPos + velocity * flightTime
+        local gravity = Workspace.Gravity
+        local compensated = predicted + Vector3.new(0, 0.5 * gravity * flightTime ^ 2, 0)
+        
+        if Workspace.CurrentCamera then
+            Workspace.CurrentCamera.CFrame = CFrame.lookAt(Workspace.CurrentCamera.CFrame.Position, compensated)
+        end
+        
+        return (compensated - originPos).Unit
+    end
+
+    local function enableNoclip()
+        if noclipConnection then return end
+        noclipConnection = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, p in ipairs(char:GetChildren()) do
+                    if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false 
+                    elseif p:IsA("Accessory") then
+                        local h = p:FindFirstChild("Handle")
+                        if h and h:IsA("BasePart") and h.CanCollide then h.CanCollide = false end
+                    end
+                end
+            end
+        end)
+    end
+
+    local function disableNoclip()
+        if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    end
+
+    local function equipSpiritBow(character, humanoid)
+        local bow = character:FindFirstChild("SpiritBow")
+        if bow then return bow end
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        local backpackBow = backpack and backpack:FindFirstChild("SpiritBow")
+        if backpackBow and humanoid then
+            humanoid:EquipTool(backpackBow)
+            task.wait(0.1)
+            return character:FindFirstChild("SpiritBow")
+        end
+        return bow
+    end
+
+    local function enableFloat(rootPart)
+        if floatConnection then return end
+        floatConnection = RunService.Heartbeat:Connect(function()
+            if isToggled and rootPart and rootPart.Parent then
+                rootPart.AssemblyLinearVelocity = Vector3.zero
+                rootPart.AssemblyAngularVelocity = Vector3.zero
+                if currentHoverCFrame then rootPart.CFrame = currentHoverCFrame end
+            end
+        end)
+    end
+
+    local function disableFloat()
+        if floatConnection then floatConnection:Disconnect() floatConnection = nil end
+        currentHoverCFrame = nil
+    end
+
+    local function isBossHealthZero()
+        local gui = LocalPlayer:FindFirstChild("PlayerGui")
+        local s4 = gui and gui:FindFirstChild("S4")
+        local health = s4 and s4:FindFirstChild("Health")
+        local front = health and health:FindFirstChild("Front")
+        return front and front.AbsoluteSize.X <= 0
+    end
+
+    local monsterTargets = {
+        { folder = "Monster2", name = "Rin2" },
+        { folder = "Monster3", name = "Tenome2" },
+        { folder = "Monster4", name = "Tsukiya2" }
+    }
+
+    local function getMonster(targetInfo)
+        local s4 = Workspace:FindFirstChild("Section4")
+        local mf = s4 and s4:FindFirstChild(targetInfo.folder)
+        local model = mf and mf:FindFirstChild(targetInfo.name)
+        if not model then return nil end
+        local hrp = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        local hitbox = model:FindFirstChild("Hitbox") or hrp
+        return model, hrp, hitbox
+    end
+
+    local function runSequence()
+        while isToggled do
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root or not hum then task.wait(0.5) continue end
+
+            enableFloat(root)
+            local waitCF = CFrame.new(30, 126, -2868)
+
+            while isToggled and not isBossHealthZero() do
+                currentHoverCFrame = waitCF
+                task.wait(0.5)
+            end
+
+            if not isToggled then break end
+            task.wait(0.5)
+
+            for _, target in ipairs(monsterTargets) do
+                if not isToggled then break end
+
+                local model, hrp, hitbox = getMonster(target)
+                if model and hrp and hitbox then
+                    local standPos = (hrp.CFrame * CFrame.new(0, 0, -50)).Position
+                    currentHoverCFrame = CFrame.lookAt(standPos, hitbox.Position)
+
+                    local bow = equipSpiritBow(char, hum)
+                    local remote = bow and bow:FindFirstChild("RemoteEvent")
+
+                    local startTime = tick()
+                    
+                    while isToggled and model.Parent and (tick() - startTime) < 40 do
+                        local prompt = hrp:FindFirstChildWhichIsA("ProximityPrompt", true) or model:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+                        if prompt and prompt.Enabled then
+                            -- Teleport near prompt before firing
+                            local promptPart = prompt.Parent
+                            if promptPart and promptPart:IsA("BasePart") then
+                                currentHoverCFrame = promptPart.CFrame + Vector3.new(0, 3, 0)
+                            else
+                                currentHoverCFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+                            end
+                            root.CFrame = currentHoverCFrame
+                            task.wait(0.3)
+                            
+                            if fireproximityprompt then 
+                                pcall(function() fireproximityprompt(prompt) end)
+                            end
+                            task.wait(0.5) 
+                        elseif remote then
+                            local keepPos = (hrp.CFrame * CFrame.new(0, 0, -50)).Position
+                            currentHoverCFrame = CFrame.lookAt(keepPos, hitbox.Position)
+                            root.CFrame = currentHoverCFrame
+                            
+                            remote:FireServer(0, true)
+                            task.wait(0.8)
+                            if model.Parent then
+                                remote:FireServer(0, false, getPerfectAimDirection(bow, hitbox, root, 300))
+                            end
+                            task.wait(0.2)
+                        else
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end
+            break
         end
 
         disableFloat()
-        
-        if isToggled then
-            local waitCF = CFrame.new(30, 126, -2868)
-            hrp.CFrame = waitCF
-            repeat
-                task.wait(0.5)
-                if hrp and hrp.Parent then hrp.CFrame = waitCF end
-            until not isToggled or findActiveWeakPoint() ~= nil
-        end
+        disableNoclip()
+        isToggled = false
     end
 
-    if hitConn then hitConn:Disconnect() end
-    disableFloat()
-    disableNoclip()
-    print("[Auto Enzukai] Loop ended.")
-end
-
-StreetTokyoMain:Toggle({
-    Title = "Auto Enzukai",
-    Default = false,
-    Callback = function(state)
-        print("[Auto Enzukai] Toggle clicked: " .. tostring(state))
-        isToggled = state
-        isFlightActive = false
-        if isToggled then
-            mainTask = task.spawn(runCombinedAutomation)
-        else
-            disableFloat()
-            disableNoclip()
-            if mainTask then 
-                task.cancel(mainTask) 
-                mainTask = nil 
+    StreetTokyoMain:Toggle({
+        Title = "Auto 3 Monsters",
+        Default = false,
+        Callback = function(state)
+            isToggled = state
+            if isToggled then
+                if mainTask then task.cancel(mainTask) end
+                enableNoclip()
+                mainTask = task.spawn(function()
+                    local ok, err = pcall(runSequence)
+                    if not ok then warn("[Auto 3 Monsters] Error:", err) end
+                end)
+            else
+                disableFloat()
+                disableNoclip()
+                if mainTask then task.cancel(mainTask) mainTask = nil end
             end
         end
-    end
-})
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
-
-local isToggled = false
-local mainTask = nil
-local floatConnection = nil
-local noclipConnection = nil
-local currentHoverCFrame = nil
-
-local function enableNoclip()
-    if noclipConnection then return end
-    noclipConnection = RunService.Stepped:Connect(function()
-        local char = LocalPlayer.Character
-        if char then
-            for _, p in ipairs(char:GetChildren()) do
-                if p:IsA("BasePart") and p.CanCollide then
-                    p.CanCollide = false
-                elseif p:IsA("Accessory") then
-                    local h = p:FindFirstChild("Handle")
-                    if h and h:IsA("BasePart") and h.CanCollide then
-                        h.CanCollide = false
-                    end
-                end
-            end
-        end
-    end)
+    })
 end
 
-local function disableNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-end
-
-local function equipSpiritBow(character, humanoid)
-    local bow = character:FindFirstChild("SpiritBow") or LocalPlayer.Backpack:FindFirstChild("SpiritBow")
-    if bow and bow.Parent ~= character and humanoid then
-        humanoid:EquipTool(bow)
-        task.wait(0.1)
-        return character:FindFirstChild("SpiritBow")
-    end
-    return bow
-end
-
-local function enableFloat(rootPart)
-    if floatConnection then return end
-    floatConnection = RunService.Heartbeat:Connect(function()
-        if isToggled and rootPart and rootPart.Parent then
-            rootPart.AssemblyLinearVelocity = Vector3.zero
-            rootPart.AssemblyAngularVelocity = Vector3.zero
-            if currentHoverCFrame then
-                rootPart.CFrame = currentHoverCFrame
-            end
-        end
-    end)
-end
-
-local function disableFloat()
-    if floatConnection then
-        floatConnection:Disconnect()
-        floatConnection = nil
-    end
-    currentHoverCFrame = nil
-end
-
-local function isBossHealthZero()
-    local gui = LocalPlayer:FindFirstChild("PlayerGui")
-    local front = gui and gui:FindFirstChild("S4") and gui.S4:FindFirstChild("Health") and gui.S4.Health:FindFirstChild("Front")
-    return front and front.AbsoluteSize.X <= 0
-end
-
-local monsterTargets = {
-    { folder = "Monster2", name = "Rin2" },
-    { folder = "Monster3", name = "Tenome2" },
-    { folder = "Monster4", name = "Tsukiya2" }
-}
-
-local function getMonster(targetInfo)
-    local s4 = Workspace:FindFirstChild("Section4")
-    local mf = s4 and s4:FindFirstChild(targetInfo.folder)
-    local model = mf and mf:FindFirstChild(targetInfo.name)
-    if not model then return nil end
-    local hrp = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
-    local hitbox = model:FindFirstChild("Hitbox") or hrp
-    return model, hrp, hitbox
-end
-
-local function runSequence()
-    while isToggled do
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local root = char:FindFirstChild("HumanoidRootPart")
-
-        if not root or not hum then 
-            task.wait(0.5)
-            continue 
-        end
-
-        enableFloat(root)
-        local waitCF = CFrame.new(30, 126, -2868)
-
-        while isToggled and not isBossHealthZero() do
-            currentHoverCFrame = waitCF
-            task.wait(0.2)
-        end
-
-        if not isToggled then break end
-        task.wait(0.5)
-
-        for _, target in ipairs(monsterTargets) do
-            if not isToggled then break end
-
-            local model, hrp, hitbox = getMonster(target)
-            if model and hrp and hitbox then
-                local standPos = (hrp.CFrame * CFrame.new(0, 0, -50)).Position
-                currentHoverCFrame = CFrame.lookAt(standPos, hitbox.Position)
-
-                local bow = equipSpiritBow(char, hum)
-                local remote = bow and bow:FindFirstChild("RemoteEvent")
-                local prompt = nil
-                local fired = false
-                local start = tick()
-
-                while isToggled and not prompt and (tick() - start) < 25 do
-                    prompt = hrp:FindFirstChildWhichIsA("ProximityPrompt", true) or model:FindFirstChildWhichIsA("ProximityPrompt", true)
-                    if prompt then break end
-
-                    if remote and not fired then
-                        remote:FireServer(0, true)
-                        local el = 0
-                        while el < 1.2 and isToggled do
-                            local newPos = (hrp.CFrame * CFrame.new(0, 0, -50)).Position
-                            currentHoverCFrame = CFrame.lookAt(newPos, hitbox.Position)
-                            
-                            prompt = hrp:FindFirstChildWhichIsA("ProximityPrompt", true) or model:FindFirstChildWhichIsA("ProximityPrompt", true)
-                            if prompt then break end
-                            
-                            local dt = RunService.Heartbeat:Wait()
-                            el += dt
-                        end
-
-                        if not isToggled or prompt then break end
-
-                        remote:FireServer(0, false, (hitbox.Position - root.Position).Unit)
-                        fired = true
-                        task.wait(0.01)
-                    else
-                        RunService.Heartbeat:Wait()
-                    end
-                    
-                    prompt = hrp:FindFirstChildWhichIsA("ProximityPrompt", true) or model:FindFirstChildWhichIsA("ProximityPrompt", true)
-                end
-
-                if isToggled and prompt then
-                    local pStart = tick()
-                    while isToggled and (tick() - pStart) < 5 do
-                        if not prompt.Parent or not prompt.Enabled then break end
-                        currentHoverCFrame = hrp.CFrame
-                        if fireproximityprompt then fireproximityprompt(prompt) end
-                        RunService.Heartbeat:Wait()
-                    end
-                end
-
-                local wStart = tick()
-                while isToggled and model.Parent and (tick() - wStart) < 10 do
-                    currentHoverCFrame = hrp.CFrame
-                    RunService.Heartbeat:Wait()
-                end
-            end
-        end
-        break
-    end
-
-    disableFloat()
-    disableNoclip()
-    isToggled = false
-end
-
-StreetTokyoMain:Toggle({
-    Title = "Auto 3 Monsters",
-    Default = false,
-    Callback = function(state)
-        isToggled = state
-        if isToggled then
-            enableNoclip()
-            mainTask = task.spawn(runSequence)
-        else
-            disableFloat()
-            disableNoclip()
-            if mainTask then task.cancel(mainTask) mainTask = nil end
-        end
-    end
-})
-
+-- ==========================================
+-- 4. AUTO ENZUKAI RYUJIN (SECTION 5 FINAL FORM)
+-- ==========================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -3402,7 +3407,8 @@ local function runWeakPointPhase(character, humanoid, rootPart, activeModel, ico
 				pcall(function() remote:FireServer(0, true) end)
 				
 				local elapsed = 0
-				while elapsed < 1.5 and isToggled and not isDodging do
+				-- Pinalitan ang 1.5 ng 0.8
+				while elapsed < 0.8 and isToggled and not isDodging do
 					currentHoverCFrame = CFrame.lookAt((eye.CFrame * offset).Position, eye.Position)
 					task.wait(0.05)
 					elapsed += 0.05
@@ -3438,7 +3444,8 @@ local function runBossPhase(character, humanoid, rootPart)
 		pcall(function() remote:FireServer(0, true) end)
 		
 		local elapsed = 0
-		while elapsed < 1.5 and isToggled and not isDodging and not findActiveWeakPoint() do
+		-- Pinalitan ang 1.5 ng 0.8
+		while elapsed < 0.8 and isToggled and not isDodging and not findActiveWeakPoint() do
 			if not headHitBox or not headHitBox.Parent then break end
 			currentHoverCFrame = CFrame.lookAt((headHitBox.CFrame * CFrame.new(15, 0, 0)).Position, headHitBox.Position)
 			task.wait(0.05)
@@ -3515,213 +3522,214 @@ StreetTokyoMain:Toggle({
 	Callback = toggleAutomation
 })
 
-local StreetTokyoESP = StreetTokyoTab:CreateSubTab({ Title = "ESP", Icon = "eye" })
-
-local espSurvivorsEnabled = false
-local survivorHighlights = {}
-local survivorConns = {}
+-- ==========================================
+-- ESP BOSS
+-- ==========================================
+local espBossEnabled = false
+local bossHighlights = {}
+local bossBillboards = {}
 
 StreetTokyoESP:Toggle({
-    Title = "Survivors",
+    Title = "ESP Boss",
     Default = false,
     Callback = function(state)
-        espSurvivorsEnabled = state
-        for _, hl in pairs(survivorHighlights) do hl:Destroy() end
-        table.clear(survivorHighlights)
-        for _, c in ipairs(survivorConns) do c:Disconnect() end
-        table.clear(survivorConns)
+        espBossEnabled = state
         
-        if not state then return end
+        for _, hl in pairs(bossHighlights) do pcall(function() hl:Destroy() end) end
+        for _, bb in pairs(bossBillboards) do pcall(function() bb:Destroy() end) end
+        table.clear(bossHighlights)
+        table.clear(bossBillboards)
         
-        local folder = workspace:FindFirstChild("Section4") and workspace.Section4:FindFirstChild("Rescue") and workspace.Section4.Rescue:FindFirstChild("NPCs")
-        if not folder then return end
+        if not espBossEnabled then return end
         
-        local function apply(obj)
-            if survivorHighlights[obj] or not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
+        local function applyBossESP(model)
+            if not model or bossHighlights[model] or not model:IsA("Model") then return end
+            
             local hl = Instance.new("Highlight")
+            hl.Name = "BossESP"
+            hl.FillColor = Color3.fromRGB(255, 0, 0)
+            hl.OutlineColor = Color3.fromRGB(0, 0, 0)
+            hl.FillTransparency = 0.5
+            hl.OutlineTransparency = 0
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Adornee = model
+            hl.Parent = model
+            bossHighlights[model] = hl
+            
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "BossName"
+            bb.Size = UDim2.new(0, 200, 0, 50)
+            bb.StudsOffset = Vector3.new(0, 3, 0)
+            bb.AlwaysOnTop = true
+            bb.Parent = model
+            
+            local tl = Instance.new("TextLabel")
+            tl.Size = UDim2.new(1, 0, 1, 0)
+            tl.BackgroundTransparency = 1
+            tl.Text = model.Name
+            tl.TextColor3 = Color3.fromRGB(255, 0, 0)
+            tl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            tl.TextStrokeTransparency = 0
+            tl.TextSize = 13
+            tl.Font = Enum.Font.FredokaOne
+            tl.Parent = bb
+            bossBillboards[model] = bb
+        end
+        
+        task.spawn(function()
+            local s4 = workspace:FindFirstChild("Section4")
+            local bossMonster = s4 and s4:FindFirstChild("BossMonster")
+            local boss = bossMonster and bossMonster:FindFirstChild("EnzukaiRyu")
+            
+            if boss then applyBossESP(boss) end
+            
+            if bossMonster then
+                bossMonster.ChildAdded:Connect(function(inst)
+                    if espBossEnabled and inst.Name == "EnzukaiRyu" then applyBossESP(inst) end
+                end)
+            end
+        end)
+    end
+})
+
+-- ==========================================
+-- ESP MONSTERS
+-- ==========================================
+local espMonstersEnabled = false
+local monsterHighlights = {}
+local monsterBillboards = {}
+local monsterConnections = {}
+
+StreetTokyoESP:Toggle({
+    Title = "ESP Monsters",
+    Default = false,
+    Callback = function(state)
+        espMonstersEnabled = state
+        
+        for _, hl in pairs(monsterHighlights) do pcall(function() hl:Destroy() end) end
+        for _, bb in pairs(monsterBillboards) do pcall(function() bb:Destroy() end) end
+        for _, conn in ipairs(monsterConnections) do pcall(function() conn:Disconnect() end) end
+        table.clear(monsterHighlights)
+        table.clear(monsterBillboards)
+        table.clear(monsterConnections)
+        
+        if not espMonstersEnabled then return end
+        
+        local function applyMonsterESP(model)
+            if not model or monsterHighlights[model] or not model:IsA("Model") then return end
+            
+            local hl = Instance.new("Highlight")
+            hl.Name = "MonsterESP"
+            hl.FillColor = Color3.fromRGB(255, 0, 0)
+            hl.OutlineColor = Color3.fromRGB(0, 0, 0)
+            hl.FillTransparency = 0.5
+            hl.OutlineTransparency = 0
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Adornee = model
+            hl.Parent = model
+            monsterHighlights[model] = hl
+            
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "MonsterName"
+            bb.Size = UDim2.new(0, 200, 0, 50)
+            bb.StudsOffset = Vector3.new(0, 3, 0)
+            bb.AlwaysOnTop = true
+            bb.Parent = model
+            
+            local tl = Instance.new("TextLabel")
+            tl.Size = UDim2.new(1, 0, 1, 0)
+            tl.BackgroundTransparency = 1
+            tl.Text = model.Name
+            tl.TextColor3 = Color3.fromRGB(255, 0, 0)
+            tl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            tl.TextStrokeTransparency = 0
+            tl.TextSize = 13
+            tl.Font = Enum.Font.FredokaOne
+            tl.Parent = bb
+            monsterBillboards[model] = bb
+        end
+        
+        task.spawn(function()
+            local s4 = workspace:FindFirstChild("Section4")
+            if not s4 then return end
+            
+            local monsterPaths = {
+                { folder = "Monster2", name = "Rin2" },
+                { folder = "Monster3", name = "Tenome2" },
+                { folder = "Monster4", name = "Tsukiya2" }
+            }
+            
+            -- Check specific folders
+            for _, path in ipairs(monsterPaths) do
+                local folder = s4:FindFirstChild(path.folder)
+                local model = folder and folder:FindFirstChild(path.name)
+                if model then applyMonsterESP(model) end
+                
+                if folder then
+                    table.insert(monsterConnections, folder.ChildAdded:Connect(function(inst)
+                        if espMonstersEnabled and inst.Name == path.name then applyMonsterESP(inst) end
+                    end))
+                end
+            end
+            
+            -- Check for MonsterEnzukaiRyu directly in Section4
+            local enzukaiMonster = s4:FindFirstChild("MonsterEnzukaiRyu")
+            if enzukaiMonster then applyMonsterESP(enzukaiMonster) end
+            
+            table.insert(monsterConnections, s4.ChildAdded:Connect(function(inst)
+                if espMonstersEnabled and inst.Name == "MonsterEnzukaiRyu" then applyMonsterESP(inst) end
+            end))
+        end)
+    end
+})
+
+-- ==========================================
+-- ESP NPCs (GREEN, NO TEXT)
+-- ==========================================
+local espNpcEnabled = false
+local npcHighlights = {}
+local npcConnections = {}
+
+StreetTokyoESP:Toggle({
+    Title = "ESP NPCs",
+    Default = false,
+    Callback = function(state)
+        espNpcEnabled = state
+        
+        for _, hl in pairs(npcHighlights) do pcall(function() hl:Destroy() end) end
+        for _, conn in ipairs(npcConnections) do pcall(function() conn:Disconnect() end) end
+        table.clear(npcHighlights)
+        table.clear(npcConnections)
+        
+        if not espNpcEnabled then return end
+        
+        local function applyNpcESP(obj)
+            if not obj or npcHighlights[obj] or not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
+            
+            local hl = Instance.new("Highlight")
+            hl.Name = "NpcESP"
             hl.FillColor = Color3.fromRGB(0, 255, 0)
             hl.OutlineColor = Color3.fromRGB(0, 255, 0)
+            hl.FillTransparency = 0.5
+            hl.OutlineTransparency = 0
             hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             hl.Adornee = obj
             hl.Parent = obj
-            survivorHighlights[obj] = hl
+            npcHighlights[obj] = hl
         end
         
-        for _, obj in ipairs(folder:GetChildren()) do apply(obj) end
-        table.insert(survivorConns, folder.ChildAdded:Connect(function(o) if espSurvivorsEnabled then apply(o) end end))
-    end
-})
-
-local espEnzukaiEnabled = false
-local enzukaiHighlights = {}
-local enzukaiConns = {}
-
-StreetTokyoESP:Toggle({
-    Title = "Enzukai",
-    Default = false,
-    Callback = function(state)
-        espEnzukaiEnabled = state
-        for _, hl in pairs(enzukaiHighlights) do hl:Destroy() end
-        table.clear(enzukaiHighlights)
-        for _, c in ipairs(enzukaiConns) do c:Disconnect() end
-        table.clear(enzukaiConns)
-        
-        if not state then return end
-        
-        local boss = workspace:FindFirstChild("Section4") and workspace.Section4:FindFirstChild("BossMonster") and workspace.Section4.BossMonster:FindFirstChild("EnzukaiRyu")
-        if not boss then return end
-        
-        local function apply(obj)
-            if enzukaiHighlights[obj] or not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
-            local hl = Instance.new("Highlight")
-            hl.FillColor = Color3.fromRGB(255, 0, 0)
-            hl.OutlineColor = Color3.fromRGB(0, 0, 0)
-            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            hl.Adornee = obj
-            hl.Parent = obj
-            enzukaiHighlights[obj] = hl
-            
-            local bb = Instance.new("BillboardGui")
-            bb.Size = UDim2.new(0, 200, 0, 50)
-            bb.StudsOffset = Vector3.new(0, 3, 0)
-            bb.AlwaysOnTop = true
-            bb.Parent = obj
-            
-            local tl = Instance.new("TextLabel")
-            tl.Size = UDim2.new(1, 0, 1, 0)
-            tl.BackgroundTransparency = 1
-            tl.Text = obj.Name
-            tl.TextColor3 = Color3.fromRGB(255, 0, 0)
-            tl.TextStrokeTransparency = 0
-            tl.TextSize = 13
-            tl.Font = Enum.Font.FredokaOne
-            tl.Parent = bb
-        end
-        
-        apply(boss)
-        table.insert(enzukaiConns, boss.ChildAdded:Connect(function(o) if espEnzukaiEnabled then apply(o) end end))
-    end
-})
-
-local esp3MonstersEnabled = false
-local monHighlights = {}
-local monConns = {}
-
-StreetTokyoESP:Toggle({
-    Title = "3 Monsters",
-    Default = false,
-    Callback = function(state)
-        esp3MonstersEnabled = state
-        for _, hl in pairs(monHighlights) do hl:Destroy() end
-        table.clear(monHighlights)
-        for _, c in ipairs(monConns) do c:Disconnect() end
-        table.clear(monConns)
-        
-        if not state then return end
-        
-        local function apply(obj)
-            if monHighlights[obj] or not (obj:IsA("Model") or obj:IsA("BasePart")) then return end
-            local hl = Instance.new("Highlight")
-            hl.FillColor = Color3.fromRGB(255, 0, 0)
-            hl.OutlineColor = Color3.fromRGB(0, 0, 0)
-            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            hl.Adornee = obj
-            hl.Parent = obj
-            monHighlights[obj] = hl
-            
-            local bb = Instance.new("BillboardGui")
-            bb.Size = UDim2.new(0, 200, 0, 50)
-            bb.StudsOffset = Vector3.new(0, 3, 0)
-            bb.AlwaysOnTop = true
-            bb.Parent = obj
-            
-            local tl = Instance.new("TextLabel")
-            tl.Size = UDim2.new(1, 0, 1, 0)
-            tl.BackgroundTransparency = 1
-            tl.Text = obj.Name
-            tl.TextColor3 = Color3.fromRGB(255, 0, 0)
-            tl.TextStrokeTransparency = 0
-            tl.TextSize = 13
-            tl.Font = Enum.Font.FredokaOne
-            tl.Parent = bb
-        end
-        
-        local s4 = workspace:FindFirstChild("Section4")
-        if s4 then
-            for _, f in ipairs({"Monster2", "Monster3", "Monster4"}) do
-                local folder = s4:FindFirstChild(f)
-                if folder then
-                    for _, m in ipairs(folder:GetChildren()) do apply(m) end
-                    table.insert(monConns, folder.ChildAdded:Connect(function(o) if esp3MonstersEnabled then apply(o) end end))
-                end
-            end
-        end
-    end
-})
-
-StreetTokyoMain:Button({
-    Title = "Rescue Survivor",
-    Callback = function()
         task.spawn(function()
-            local player = game:GetService("Players").LocalPlayer
-            local Character = player.Character or player.CharacterAdded:Wait()
-            local HRP = Character:FindFirstChild("HumanoidRootPart")
-            if not HRP then return end
-
             local s4 = workspace:FindFirstChild("Section4")
             local rescue = s4 and s4:FindFirstChild("Rescue")
-            local npcFolder = rescue and rescue:FindFirstChild("NPCs")
-            if not npcFolder then return end
-
-            local poses = {}
-            for _, obj in ipairs(npcFolder:GetChildren()) do
-                if #poses >= 3 then break end
-                if obj:IsA("Model") and obj.Name:lower():find("pose") then
-                    table.insert(poses, obj)
+            local npcs = rescue and rescue:FindFirstChild("NPCs")
+            
+            if npcs then
+                for _, child in ipairs(npcs:GetChildren()) do
+                    applyNpcESP(child)
                 end
-            end
-
-            local function getPrimaryPart(model)
-                if not model then return nil end
-                if model:IsA("Model") then
-                    return model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-                elseif model:IsA("BasePart") then
-                    return model
-                end
-                return nil
-            end
-
-            for _, pose in ipairs(poses) do
-                local targetPart = getPrimaryPart(pose)
-                if targetPart then
-                    HRP.AssemblyLinearVelocity = Vector3.zero
-                    HRP.AssemblyAngularVelocity = Vector3.zero
-                    Character:PivotTo(targetPart.CFrame + Vector3.new(0, 3, 0))
-                    task.wait(0.2)
-                    
-                    local prompt = pose:FindFirstChildWhichIsA("ProximityPrompt", true)
-                    if prompt and prompt.Enabled then
-                        prompt.HoldDuration = 0
-                        prompt.RequiresLineOfSight = false
-                        pcall(function()
-                            if fireproximityprompt then
-                                fireproximityprompt(prompt)
-                            else
-                                prompt:InputHoldBegin()
-                                task.wait(0.05)
-                                prompt:InputHoldEnd()
-                            end
-                        end)
-                    end
-                    task.wait(0.2)
-                end
-            end
-
-            local rescuePoint = rescue and rescue:FindFirstChild("RescuePoint")
-            if rescuePoint and rescuePoint:IsA("BasePart") then
-                HRP.AssemblyLinearVelocity = Vector3.zero
-                HRP.AssemblyAngularVelocity = Vector3.zero
-                Character:PivotTo(rescuePoint.CFrame + Vector3.new(0, 3, 0))
+                table.insert(npcConnections, npcs.ChildAdded:Connect(function(inst)
+                    if espNpcEnabled then applyNpcESP(inst) end
+                end))
             end
         end)
     end
